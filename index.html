@@ -1,484 +1,1305 @@
 <!doctype html>
 <html lang="zh-TW">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Luster Markdown Studio</title>
-  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-light.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.min.js"></script>
-  <style>
-    @import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap");
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: "Inter", sans-serif; background: #f1f5f9; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-    #navbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 8px 18px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    #navbar .logo { background: #10b981; padding: 5px 8px; border-radius: 6px; color: #fff; font-size: 13px; flex-shrink: 0; }
-    #navbar h1 { font-size: 14px; font-weight: 600; color: #374151; }
-    #pasteToast { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #f8fafc; font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 20px; z-index: 10000; opacity: 0; transition: opacity 0.2s; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    #pasteToast.show { opacity: 1; }
-    #mainContainer { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-    .panel-wrap { display: flex; flex-direction: column; background: #fff; min-width: 0; overflow: hidden; }
-    #editorPanel { width: 50%; flex-shrink: 0; border-right: 1px solid #e2e8f0; }
-    #previewPanel { flex: 1; }
-    .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 36px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; overflow: visible; position: relative; z-index: 20; }
-    .panel-title { font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.1em; text-transform: uppercase; user-select: none; }
-    .panel-actions { display: flex; align-items: center; gap: 2px; }
-    .icon-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: #64748b; font-size: 12.5px; cursor: pointer; background: transparent; border: none; transition: background 0.12s, color 0.12s; }
-    .icon-btn:hover { background: #e2e8f0; color: #1e293b; }
-    .icon-btn:active { transform: scale(0.88); }
-    .icon-btn .tooltip { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1e293b; color: #f8fafc; font-size: 11.5px; font-weight: 500; white-space: nowrap; padding: 4px 10px; border-radius: 6px; pointer-events: none; opacity: 0; transition: opacity 0.15s 0.4s; z-index: 9999; box-shadow: 0 3px 10px rgba(0,0,0,0.18); }
-    .icon-btn:hover .tooltip { opacity: 1; }
-    #input { flex: 1; width: 100%; padding: 16px 20px; background: #fff; color: #1e293b; font-family: "Fira Code", monospace; font-size: 13.5px; line-height: 1.65; outline: none; resize: none; border: none; }
-    #input::placeholder { color: #94a3b8; }
-    .panel-status { flex-shrink: 0; height: 24px; padding: 0 14px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #94a3b8; user-select: none; }
-    #resizer { width: 4px; background: #e2e8f0; cursor: col-resize; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: center; transition: background 0.15s; z-index: 5; }
-    #resizer::before { content: ""; position: absolute; top: 0; bottom: 0; left: -7px; right: -7px; }
-    #resizer:hover, #resizer.dragging { background: #3b82f6; }
-    #resizerIcon { color: #94a3b8; font-size: 9px; opacity: 0; transition: opacity 0.15s; pointer-events: none; display: flex; gap: 2px; }
-    #resizer:hover #resizerIcon { opacity: 1; }
-    #previewContent { flex: 1; overflow-y: auto; padding: 28px 36px 48px; background: #fff; }
-    .markdown-body { width: 100%; font-size: 16px; line-height: 1.75; }
-    .markdown-body h1 { font-size: 2.4em; border-bottom: none !important; padding-bottom: 0 !important; margin-top: 1.5em; margin-bottom: 0.6em; }
-    .markdown-body h2 { font-size: 1.85em; border-bottom: none !important; padding-bottom: 0 !important; margin-top: 1.4em; margin-bottom: 0.5em; }
-    .markdown-body h3 { font-size: 1.4em; margin-top: 1.2em; }
-    .markdown-body h4 { font-size: 1.15em; }
-    .markdown-body > h1:first-child, .markdown-body > h2:first-child { margin-top: 0; }
-    .markdown-body hr { height: 0 !important; background: transparent !important; border: none !important; border-top: 1px solid #d0d7de !important; margin: 28px 0 !important; }
-    .markdown-body pre { padding: 0 !important; background: transparent !important; border: none !important; }
-    .markdown-body pre > code.hljs { display: block; border-radius: 8px; font-size: 13px; line-height: 1.6; padding: 16px 18px; background-color: #282c34; }
-    .markdown-body code:not(.hljs) { background: #f6f8fa; color: #d63384; padding: 2px 6px; border-radius: 4px; font-size: 0.875em; border: 1px solid #e2e8f0; }
-    .markdown-body .math-block { overflow-x: auto; padding: 10px 0; text-align: center; margin: 1em 0; }
-    .markdown-body .mermaid-wrap { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; margin: 20px 0; text-align: center; overflow-x: auto; }
-    .markdown-body .mermaid-wrap svg { max-width: 100%; height: auto; display: inline-block; }
-    .markdown-body .abc-wrap { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; overflow-x: auto; }
-    .markdown-body .abc-wrap svg { max-width: 100%; height: auto; }
-    .markdown-body table { width: 100% !important; display: table !important; table-layout: fixed !important; border-collapse: collapse !important; margin: 16px 0 !important; }
-    .markdown-body table th, .markdown-body table td { word-wrap: break-word !important; overflow-wrap: break-word !important; padding: 8px 12px !important; }
-    .markdown-body table thead tr { background: #f6f8fa !important; }
-    .markdown-body table tbody tr:hover { background: #f8fafc !important; }
-    .markdown-body table-wrapper { overflow-x: auto; width: 100%; }
-    #appFooter { flex-shrink: 0; height: 36px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11.5px; color: #94a3b8; }
-    #appFooter img { width: 20px; height: 20px; border-radius: 3px; }
-    #appFooter a { color: #64748b; text-decoration: none; font-weight: 500; }
-    #appFooter a:hover { color: #3b82f6; text-decoration: underline; }
-    @media print {
-      #navbar, #appFooter, #editorPanel, #resizer, .panel-header, .panel-status, #pasteToast { display: none !important; }
-      body { background: #fff; overflow: visible; height: auto; }
-      #mainContainer { display: block; overflow: visible; height: auto; }
-      #previewPanel { display: block !important; width: 100% !important; overflow: visible !important; height: auto !important; }
-      #previewContent { overflow: visible !important; height: auto !important; max-height: none !important; padding: 15mm 20mm !important; }
-      .markdown-body { max-width: 100% !important; }
-      .markdown-body pre > code.hljs { background: #282c34 !important; color: #abb2bf !important; border: 1px solid #282c34 !important; }
-      .katex-display { page-break-inside: avoid; }
-      .math-block { page-break-inside: avoid; }
-    }
-  </style>
-</head>
-<body>
-  <div id="pasteToast"></div>
-  <div id="navbar">
-    <div class="logo"><i class="fas fa-wand-magic-sparkles"></i></div>
-    <h1>Luster Markdown Studio</h1>
-  </div>
-  <div id="mainContainer">
-    <div id="editorPanel" class="panel-wrap">
-      <div class="panel-header">
-        <span class="panel-title">Editor</span>
-        <div class="panel-actions">
-          <button class="icon-btn" id="formatBtn"><i class="fas fa-wand-magic-sparkles"></i><span class="tooltip">Format</span></button>
-          <button class="icon-btn" id="editorCopyBtn"><i class="far fa-copy"></i><span class="tooltip">Copy</span></button>
-          <button class="icon-btn" id="editorDownloadBtn"><i class="fas fa-file-arrow-down"></i><span class="tooltip">Download .md</span></button>
-          <button class="icon-btn" id="editorExpandBtn"><i class="fas fa-up-right-and-down-left-from-center"></i><span class="tooltip">Expand</span></button>
-        </div>
-      </div>
-      <textarea id="input" spellcheck="false" class="custom-scroll" placeholder="貼上 Markdown 內容...&#10;&#10;提示：從任意網頁複製內容後在此貼上，自動轉換為 Markdown！"></textarea>
-      <div class="panel-status">
-        <span id="editorCharCount">0 chars</span>
-        <span id="editorLineCount">0 lines</span>
-      </div>
-    </div>
-    <div id="resizer">
-      <div id="resizerIcon"><i class="fas fa-chevron-left"></i><i class="fas fa-chevron-right"></i></div>
-    </div>
-    <div id="previewPanel" class="panel-wrap">
-      <div class="panel-header">
-        <span class="panel-title">Preview</span>
-        <div class="panel-actions">
-          <button class="icon-btn" id="previewCopyBtn"><i class="far fa-copy"></i><span class="tooltip">Copy</span></button>
-          <button class="icon-btn" id="copyHtmlBtn"><i class="fas fa-code"></i><span class="tooltip">Copy HTML</span></button>
-          <button class="icon-btn" id="pdfBtn"><i class="fas fa-file-pdf"></i><span class="tooltip">Download PDF</span></button>
-          <button class="icon-btn" id="previewExpandBtn"><i class="fas fa-up-right-and-down-left-from-center"></i><span class="tooltip">Expand</span></button>
-        </div>
-      </div>
-      <div id="previewContent" class="custom-scroll">
-        <div id="markdownBody" class="markdown-body"></div>
-      </div>
-      <div class="panel-status">
-        <span id="previewCharCount">0 rendered chars</span>
-        <span style="color:#10b981;font-weight:500;">PDF-ready &middot; LaTeX &#10003;</span>
-      </div>
-    </div>
-  </div>
-  <div id="appFooter">
-    <img src="https://static.wixstatic.com/media/4a0432_06eba3ab3df149589fbd3e44f0cbc2a3~mv2.png/v1/fill/w_40,h_40,lg_1,usm_0.66_1.00_0.01/4a0432_06eba3ab3df149589fbd3e44f0cbc2a3~mv2.png" alt="達暉資訊" />
-    <span>Powered by</span>
-    <a href="https://www.lustertech.net" target="_blank">達暉資訊有限公司 (Luster Tech)</a>
-    <span>&middot;</span>
-    <span>Luster Markdown Studio</span>
-  </div>
-  <script>
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'default',
-      themeVariables: {
-        fontSize: '16px',
-        fontFamily: 'Arial, sans-serif'
-      },
-      flowchart: {
-        useMaxWidth: false,
-        htmlLabels: true,
-        curve: 'basis'
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luster Markdown Studio</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-light.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap");
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-    });
-
-    marked.use({
-      gfm: true, breaks: true,
-      renderer: {
-        code: function(code, lang) {
-          if (lang === 'mermaid') return '<div class="mermaid-wrap"><div class="mermaid">' + code + '</div></div>';
-          if (lang === 'abc') return '<div class="abc-wrap"><div class="abc-notation">' + code + '</div></div>';
-          var vl = lang && hljs.getLanguage(lang) ? lang : null;
-          var hl = vl ? hljs.highlight(code, { language: vl }).value : hljs.highlightAuto(code).value;
-          return '<pre><code class="hljs' + (vl ? ' language-' + vl : '') + '">' + hl + '</code></pre>';
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f1f5f9;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      #navbar {
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 8px 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      #navbar .logo {
+        background: #10b981;
+        padding: 5px 8px;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+      #navbar h1 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+      }
+      #pasteToast {
+        position: fixed;
+        top: 52px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1e293b;
+        color: #f8fafc;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 6px 14px;
+        border-radius: 20px;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      #pasteToast.show {
+        opacity: 1;
+      }
+      #mainContainer {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+        min-height: 0;
+      }
+      .panel-wrap {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        min-width: 0;
+        overflow: hidden;
+      }
+      #editorPanel {
+        width: 50%;
+        flex-shrink: 0;
+        border-right: 1px solid #e2e8f0;
+      }
+      #previewPanel {
+        flex: 1;
+      }
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        height: 36px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        flex-shrink: 0;
+        overflow: visible;
+        position: relative;
+        z-index: 20;
+      }
+      .panel-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        user-select: none;
+      }
+      .panel-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .icon-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        color: #64748b;
+        font-size: 12.5px;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        transition:
+          background 0.12s,
+          color 0.12s;
+      }
+      .icon-btn:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+      }
+      .icon-btn:active {
+        transform: scale(0.88);
+      }
+      .icon-btn .tooltip {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1e293b;
+        color: #f8fafc;
+        font-size: 11.5px;
+        font-weight: 500;
+        white-space: nowrap;
+        padding: 4px 10px;
+        border-radius: 6px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s 0.4s;
+        z-index: 9999;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+      }
+      .icon-btn:hover .tooltip {
+        opacity: 1;
+      }
+      #input {
+        flex: 1;
+        width: 100%;
+        padding: 16px 20px;
+        background: #fff;
+        color: #1e293b;
+        font-family: "Fira Code", monospace;
+        font-size: 13.5px;
+        line-height: 1.65;
+        outline: none;
+        resize: none;
+        border: none;
+      }
+      #input::placeholder {
+        color: #94a3b8;
+      }
+      .panel-status {
+        flex-shrink: 0;
+        height: 24px;
+        padding: 0 14px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #94a3b8;
+        user-select: none;
+      }
+      #resizer {
+        width: 4px;
+        background: #e2e8f0;
+        cursor: col-resize;
+        flex-shrink: 0;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+        z-index: 5;
+      }
+      #resizer::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -7px;
+        right: -7px;
+      }
+      #resizer:hover,
+      #resizer.dragging {
+        background: #3b82f6;
+      }
+      #resizerIcon {
+        color: #94a3b8;
+        font-size: 9px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+        display: flex;
+        gap: 2px;
+      }
+      #resizer:hover #resizerIcon {
+        opacity: 1;
+      }
+      #previewContent {
+        flex: 1;
+        overflow-y: auto;
+        padding: 28px 36px 48px;
+        background: #fff;
+      }
+      .markdown-body {
+        width: 100%;
+        font-size: 16px;
+        line-height: 1.75;
+      }
+      .markdown-body h1 {
+        font-size: 2.4em;
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+        margin-top: 1.5em;
+        margin-bottom: 0.6em;
+      }
+      .markdown-body h2 {
+        font-size: 1.85em;
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+        margin-top: 1.4em;
+        margin-bottom: 0.5em;
+      }
+      .markdown-body h3 {
+        font-size: 1.4em;
+        margin-top: 1.2em;
+      }
+      .markdown-body h4 {
+        font-size: 1.15em;
+      }
+      .markdown-body > h1:first-child,
+      .markdown-body > h2:first-child {
+        margin-top: 0;
+      }
+      .markdown-body hr {
+        height: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        border-top: 1px solid #d0d7de !important;
+        margin: 28px 0 !important;
+      }
+      .markdown-body pre {
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+      }
+      .markdown-body pre > code.hljs {
+        display: block;
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.6;
+        padding: 16px 18px;
+        background-color: #282c34;
+      }
+      .markdown-body code:not(.hljs) {
+        background: #f6f8fa;
+        color: #d63384;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.875em;
+        border: 1px solid #e2e8f0;
+      }
+      .markdown-body .math-block {
+        overflow-x: auto;
+        padding: 10px 0;
+        text-align: center;
+        margin: 1em 0;
+      }
+      .markdown-body .mermaid-wrap {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 30px;
+        margin: 20px 0;
+        text-align: center;
+        overflow-x: auto;
+      }
+      .markdown-body .mermaid-wrap svg {
+        max-width: 100%;
+        height: auto;
+        display: inline-block;
+      }
+      .markdown-body .abc-wrap {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 16px 0;
+        text-align: center;
+        overflow-x: auto;
+      }
+      .markdown-body .abc-wrap svg {
+        max-width: 100%;
+        height: auto;
+      }
+      .markdown-body table {
+        width: 100% !important;
+        display: table !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        margin: 16px 0 !important;
+      }
+      .markdown-body table th,
+      .markdown-body table td {
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        padding: 8px 12px !important;
+      }
+      .markdown-body table thead tr {
+        background: #f6f8fa !important;
+      }
+      .markdown-body table tbody tr:hover {
+        background: #f8fafc !important;
+      }
+      .markdown-body table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+      }
+      #appFooter {
+        flex-shrink: 0;
+        height: 36px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 11.5px;
+        color: #94a3b8;
+      }
+      #appFooter img {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+      }
+      #appFooter a {
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      #appFooter a:hover {
+        color: #3b82f6;
+        text-decoration: underline;
+      }
+      @media print {
+        #navbar,
+        #appFooter,
+        #editorPanel,
+        #resizer,
+        .panel-header,
+        .panel-status,
+        #pasteToast {
+          display: none !important;
+        }
+        body {
+          background: #fff;
+          overflow: visible;
+          height: auto;
+        }
+        #mainContainer {
+          display: block;
+          overflow: visible;
+          height: auto;
+        }
+        #previewPanel {
+          display: block !important;
+          width: 100% !important;
+          overflow: visible !important;
+          height: auto !important;
+        }
+        #previewContent {
+          overflow: visible !important;
+          height: auto !important;
+          max-height: none !important;
+          padding: 15mm 20mm !important;
+        }
+        .markdown-body {
+          max-width: 100% !important;
+        }
+        .markdown-body pre > code.hljs {
+          background: #282c34 !important;
+          color: #abb2bf !important;
+          border: 1px solid #282c34 !important;
+        }
+        .katex-display {
+          page-break-inside: avoid;
+        }
+        .math-block {
+          page-break-inside: avoid;
         }
       }
-    });
-
-    function extractMath(md) {
-      var blocks = [], inlines = [];
-      md = md.replace(/\$\$([\s\S]+?)\$\$/g, function(_, t) { blocks.push(t); return '%%MB_' + (blocks.length-1) + '%%'; });
-      md = md.replace(/\$([^\n$]+?)\$/g,      function(_, t) { inlines.push(t); return '%%MI_' + (inlines.length-1) + '%%'; });
-      return { md: md, blocks: blocks, inlines: inlines };
-    }
-    function restoreMath(html, blocks, inlines) {
-      html = html.replace(/%%MB_(\d+)%%/g, function(_, i) {
-        try { return '<div class="math-block">' + katex.renderToString(blocks[+i], { displayMode: true, throwOnError: false }) + '</div>'; }
-        catch(e) { return '<div class="math-block">' + blocks[+i] + '</div>'; }
+    </style>
+  </head>
+  <body>
+    <div id="pasteToast"></div>
+    <div id="navbar">
+      <div class="logo"><i class="fas fa-wand-magic-sparkles"></i></div>
+      <h1>Luster Markdown Studio</h1>
+    </div>
+    <div id="mainContainer">
+      <div id="editorPanel" class="panel-wrap">
+        <div class="panel-header">
+          <span class="panel-title">Editor</span>
+          <div class="panel-actions">
+            <button class="icon-btn" id="formatBtn">
+              <i class="fas fa-wand-magic-sparkles"></i
+              ><span class="tooltip">Format</span>
+            </button>
+            <button class="icon-btn" id="editorCopyBtn">
+              <i class="far fa-copy"></i><span class="tooltip">Copy</span>
+            </button>
+            <button class="icon-btn" id="editorDownloadBtn">
+              <i class="fas fa-file-arrow-down"></i
+              ><span class="tooltip">Download .md</span>
+            </button>
+            <button class="icon-btn" id="syncScrollBtn">
+              <i class="fas fa-link" style="color: #10b981"></i
+              ><span class="tooltip">同步捲動</span>
+            </button>
+            <button class="icon-btn" id="editorExpandBtn">
+              <i class="fas fa-up-right-and-down-left-from-center"></i
+              ><span class="tooltip">Expand</span>
+            </button>
+          </div>
+        </div>
+        <textarea
+          id="input"
+          spellcheck="false"
+          class="custom-scroll"
+          placeholder="貼上 Markdown 內容...&#10;&#10;提示：從任意網頁複製內容後在此貼上，自動轉換為 Markdown！"
+        ></textarea>
+        <div class="panel-status">
+          <span id="editorCharCount">0 chars</span>
+          <span id="editorLineCount">0 lines</span>
+        </div>
+      </div>
+      <div id="resizer">
+        <div id="resizerIcon">
+          <i class="fas fa-chevron-left"></i
+          ><i class="fas fa-chevron-right"></i>
+        </div>
+      </div>
+      <div id="previewPanel" class="panel-wrap">
+        <div class="panel-header">
+          <span class="panel-title">Preview</span>
+          <div class="panel-actions">
+            <button class="icon-btn" id="previewCopyBtn">
+              <i class="far fa-copy"></i><span class="tooltip">Copy</span>
+            </button>
+            <button class="icon-btn" id="copyHtmlBtn">
+              <i class="fas fa-code"></i><span class="tooltip">Copy HTML</span>
+            </button>
+            <button class="icon-btn" id="pdfBtn">
+              <i class="fas fa-file-pdf"></i
+              ><span class="tooltip">Download PDF</span>
+            </button>
+            <button class="icon-btn" id="previewExpandBtn">
+              <i class="fas fa-up-right-and-down-left-from-center"></i
+              ><span class="tooltip">Expand</span>
+            </button>
+          </div>
+        </div>
+        <div id="previewContent" class="custom-scroll">
+          <div id="markdownBody" class="markdown-body"></div>
+        </div>
+        <div class="panel-status">
+          <span id="previewCharCount">0 rendered chars</span>
+          <span style="color: #10b981; font-weight: 500"
+            >PDF-ready &middot; LaTeX &#10003;</span
+          >
+        </div>
+      </div>
+    </div>
+    <div id="appFooter">
+      <img
+        src="https://static.wixstatic.com/media/4a0432_06eba3ab3df149589fbd3e44f0cbc2a3~mv2.png/v1/fill/w_40,h_40,lg_1,usm_0.66_1.00_0.01/4a0432_06eba3ab3df149589fbd3e44f0cbc2a3~mv2.png"
+        alt="達暉資訊"
+      />
+      <span>Powered by</span>
+      <a href="https://www.lustertech.net" target="_blank"
+        >達暉資訊有限公司 (Luster Tech)</a
+      >
+      <span>&middot;</span>
+      <span>Luster Markdown Studio</span>
+    </div>
+    <script>
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "default",
+        themeVariables: {
+          fontSize: "16px",
+          fontFamily: "Arial, sans-serif",
+        },
+        flowchart: {
+          useMaxWidth: false,
+          htmlLabels: true,
+          curve: "basis",
+        },
       });
-      html = html.replace(/%%MI_(\d+)%%/g, function(_, i) {
-        try { return katex.renderToString(inlines[+i], { throwOnError: false }); }
-        catch(e) { return '$' + inlines[+i] + '$'; }
+
+      marked.use({
+        gfm: true,
+        breaks: true,
+        renderer: {
+          code: function (code, lang) {
+            if (lang === "mermaid")
+              return (
+                '<div class="mermaid-wrap"><div class="mermaid">' +
+                code +
+                "</div></div>"
+              );
+            if (lang === "abc")
+              return (
+                '<div class="abc-wrap"><div class="abc-notation">' +
+                code +
+                "</div></div>"
+              );
+            var vl = lang && hljs.getLanguage(lang) ? lang : null;
+            var hl = vl
+              ? hljs.highlight(code, { language: vl }).value
+              : hljs.highlightAuto(code).value;
+            return (
+              '<pre><code class="hljs' +
+              (vl ? " language-" + vl : "") +
+              '">' +
+              hl +
+              "</code></pre>"
+            );
+          },
+        },
       });
-      return html;
-    }
 
-    var inputEl      = document.getElementById('input');
-    var mdBody       = document.getElementById('markdownBody');
-    var editorPanel  = document.getElementById('editorPanel');
-    var previewPanel = document.getElementById('previewPanel');
-    var mainCont     = document.getElementById('mainContainer');
-    var resizer      = document.getElementById('resizer');
-    var STORAGE_KEY  = 'luster-md-studio-content';
-
-    var saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) inputEl.value = saved;
-
-    var mermaidSeq = 0;
-    async function updatePreview() {
-      var ex = extractMath(inputEl.value || '');
-      var html = restoreMath(marked.parse(ex.md), ex.blocks, ex.inlines);
-      mdBody.innerHTML = html;
-      
-      // 渲染 Mermaid 圖表
-      var diags = mdBody.querySelectorAll('.mermaid');
-      for (var i = 0; i < diags.length; i++) {
-        var el = diags[i], src = el.textContent.trim(), id = 'mmd-' + (++mermaidSeq);
-        try { var r = await mermaid.render(id, src); el.innerHTML = r.svg; }
-        catch(e2) { el.innerHTML = '<pre style="color:#ef4444;font-size:12px;">' + e2.message + '</pre>'; }
+      function extractMath(md) {
+        var blocks = [],
+          inlines = [];
+        md = md.replace(/\$\$([\s\S]+?)\$\$/g, function (_, t) {
+          blocks.push(t);
+          return "%%MB_" + (blocks.length - 1) + "%%";
+        });
+        md = md.replace(/\$([^\n$]+?)\$/g, function (_, t) {
+          inlines.push(t);
+          return "%%MI_" + (inlines.length - 1) + "%%";
+        });
+        return { md: md, blocks: blocks, inlines: inlines };
       }
-      
-      // 渲染 ABC 音樂記譜
-      if (typeof ABCJS !== 'undefined') {
-        var abcElements = mdBody.querySelectorAll('.abc-notation');
-        for (var j = 0; j < abcElements.length; j++) {
-          var abcEl = abcElements[j];
-          var abcCode = abcEl.textContent.trim();
-          abcEl.innerHTML = ''; // 清空文字內容
+      function restoreMath(html, blocks, inlines) {
+        html = html.replace(/%%MB_(\d+)%%/g, function (_, i) {
           try {
-            ABCJS.renderAbc(abcEl, abcCode, {
-              responsive: 'resize',
-              staffwidth: 740,
-              scale: 1.0
-            });
-          } catch(e3) {
-            abcEl.innerHTML = '<pre style="color:#ef4444;font-size:12px;">ABC 渲染錯誤: ' + e3.message + '</pre>';
-          }
-        }
-      }
-      
-      updateStatus();
-    }
-
-    function updateStatus() {
-      var txt = inputEl.value;
-      document.getElementById('editorCharCount').textContent = txt.length.toLocaleString() + ' chars';
-      document.getElementById('editorLineCount').textContent = (txt ? txt.split('\n').length : 0).toLocaleString() + ' lines';
-      var pc = mdBody.innerText ? mdBody.innerText.length : 0;
-      document.getElementById('previewCharCount').textContent = pc.toLocaleString() + ' rendered chars';
-    }
-
-    inputEl.addEventListener('input', function() {
-      localStorage.setItem(STORAGE_KEY, inputEl.value);
-      updatePreview();
-    });
-    if (saved) updatePreview(); else updateStatus();
-
-    // ── Paste-to-Markdown via Turndown ──────────────────────────────
-    var td = new TurndownService({
-      headingStyle: 'atx', hr: '---', bulletListMarker: '-',
-      codeBlockStyle: 'fenced', fence: '```',
-      emDelimiter: '_', strongDelimiter: '**', linkStyle: 'inlined'
-    });
-    if (typeof turndownPluginGfm !== 'undefined') td.use(turndownPluginGfm.tables);
-    
-    // 自定義表格轉換規則 - 用於 GFM 插件失效時的備用方案
-    td.addRule('customTable', {
-      filter: function(node) { return node.nodeName === 'TABLE'; },
-      replacement: function(content, node) {
-        var rows = [];
-        var thead = node.querySelector('thead');
-        var tbody = node.querySelector('tbody') || node;
-        
-        // 獲取所有行
-        var allRows = Array.from((thead || tbody).querySelectorAll('tr'));
-        if (!thead && allRows.length === 0) allRows = Array.from(node.querySelectorAll('tr'));
-        
-        allRows.forEach(function(row, rowIdx) {
-          var cells = Array.from(row.querySelectorAll('td, th'));
-          var rowMd = '| ' + cells.map(function(cell) {
-            // 複製單元格以便操作，避免修改原始 DOM
-            var tempCell = cell.cloneNode(true);
-            
-            // 先將 <br> 轉換成換行符，方便後續處理
-            var brs = tempCell.querySelectorAll('br');
-            for (var b = 0; b < brs.length; b++) {
-              var textNode = document.createTextNode('\n');
-              brs[b].parentNode.replaceChild(textNode, brs[b]);
-            }
-            
-            // 將 <p> 標籤之間加入換行符
-            var ps = tempCell.querySelectorAll('p');
-            for (var p = 0; p < ps.length; p++) {
-              if (p > 0) {
-                var prevSibling = ps[p].previousSibling;
-                if (prevSibling && prevSibling.nodeType !== 3) {
-                  ps[p].parentNode.insertBefore(document.createTextNode('\n'), ps[p]);
-                }
-              }
-            }
-            
-            // 獲取文字內容，保留換行符
-            var text = tempCell.textContent || tempCell.innerText || '';
-            
-            // 分行處理
-            var lines = text.split('\n')
-              .map(function(line) { return line.trim(); })
-              .filter(function(line) { return line.length > 0; });
-            
-            // 用 <br> 連接多行，並處理特殊字符
-            var result = lines.join('<br>')
-              .replace(/\|/g, '\\|');  // 只轉義管道符，不壓縮空白
-            
-            return result;
-          }).join(' | ') + ' |';
-          rows.push(rowMd);
-          
-          // 在第一行後加入分隔行
-          if (rowIdx === 0) {
-            var sep = '|' + cells.map(function() { return ' --- |'; }).join('');
-            rows.push(sep);
+            return (
+              '<div class="math-block">' +
+              katex.renderToString(blocks[+i], {
+                displayMode: true,
+                throwOnError: false,
+              }) +
+              "</div>"
+            );
+          } catch (e) {
+            return '<div class="math-block">' + blocks[+i] + "</div>";
           }
         });
-        
-        return '\n' + rows.join('\n') + '\n';
+        html = html.replace(/%%MI_(\d+)%%/g, function (_, i) {
+          try {
+            return katex.renderToString(inlines[+i], { throwOnError: false });
+          } catch (e) {
+            return "$" + inlines[+i] + "$";
+          }
+        });
+        return html;
       }
-    });
-    
-    td.addRule('brInTableCell', {
-      filter: function(node) {
-        if (node.nodeName !== 'BR') return false;
-        var p = node.parentNode;
-        while (p) { if (p.nodeName==='TD'||p.nodeName==='TH') return true; if (p.nodeName==='TABLE'||p.nodeName==='BODY') break; p = p.parentNode; }
-        return false;
-      },
-      replacement: function() { return ' '; }
-    });
-    td.remove(['style','script','noscript']);
 
-    function cleanMd(s) {
-      return s.replace(/[\u2018\u2019\u00b4]/g,"'").replace(/[\u201c\u201d\u2033]/g,'"')
-        .replace(/[\u2013\u2015]/g,'--').replace(/\u2014/g,'---').replace(/\u2026/g,'...')
-        .replace(/[\u00A0]/g,' ').replace(/[\u200B\uFEFF]/g,'')
-        .replace(/\n{3,}/g,'\n\n').trim();
-    }
-    function insertAtCursor(f, v) {
-      var s=f.selectionStart, e=f.selectionEnd;
-      f.value = f.value.substring(0,s)+v+f.value.substring(e);
-      f.selectionStart = f.selectionEnd = s+v.length; f.focus();
-    }
-    function showToast(msg) {
-      var t=document.getElementById('pasteToast'); t.textContent=msg; t.classList.add('show');
-      clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},2500);
-    }
+      var inputEl = document.getElementById("input");
+      var mdBody = document.getElementById("markdownBody");
+      var editorPanel = document.getElementById("editorPanel");
+      var previewPanel = document.getElementById("previewPanel");
+      var mainCont = document.getElementById("mainContainer");
+      var resizer = document.getElementById("resizer");
+      var STORAGE_KEY = "luster-md-studio-content";
 
-    inputEl.addEventListener('paste', function(e) {
-      var html = e.clipboardData.getData('text/html');
-      if (html && html.trim().length > 50) {
-        e.preventDefault();
-        try {
-          var md = cleanMd(td.turndown(html));
-          insertAtCursor(inputEl, md);
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) inputEl.value = saved;
+
+      var mermaidSeq = 0;
+      async function updatePreview() {
+        var ex = extractMath(inputEl.value || "");
+        var html = restoreMath(marked.parse(ex.md), ex.blocks, ex.inlines);
+        mdBody.innerHTML = html;
+        buildScrollLineMap();
+
+        // 渲染 Mermaid 圖表
+        var diags = mdBody.querySelectorAll(".mermaid");
+        for (var i = 0; i < diags.length; i++) {
+          var el = diags[i],
+            src = el.textContent.trim(),
+            id = "mmd-" + ++mermaidSeq;
+          try {
+            var r = await mermaid.render(id, src);
+            el.innerHTML = r.svg;
+          } catch (e2) {
+            el.innerHTML =
+              '<pre style="color:#ef4444;font-size:12px;">' +
+              e2.message +
+              "</pre>";
+          }
+        }
+
+        // 渲染 ABC 音樂記譜
+        if (typeof ABCJS !== "undefined") {
+          var abcElements = mdBody.querySelectorAll(".abc-notation");
+          for (var j = 0; j < abcElements.length; j++) {
+            var abcEl = abcElements[j];
+            var abcCode = abcEl.textContent.trim();
+            abcEl.innerHTML = ""; // 清空文字內容
+            try {
+              ABCJS.renderAbc(abcEl, abcCode, {
+                responsive: "resize",
+                staffwidth: 740,
+                scale: 1.0,
+              });
+            } catch (e3) {
+              abcEl.innerHTML =
+                '<pre style="color:#ef4444;font-size:12px;">ABC 渲染錯誤: ' +
+                e3.message +
+                "</pre>";
+            }
+          }
+        }
+
+        updateStatus();
+      }
+
+      function updateStatus() {
+        var txt = inputEl.value;
+        document.getElementById("editorCharCount").textContent =
+          txt.length.toLocaleString() + " chars";
+        document.getElementById("editorLineCount").textContent =
+          (txt ? txt.split("\n").length : 0).toLocaleString() + " lines";
+        var pc = mdBody.innerText ? mdBody.innerText.length : 0;
+        document.getElementById("previewCharCount").textContent =
+          pc.toLocaleString() + " rendered chars";
+      }
+
+      inputEl.addEventListener("input", function () {
+        localStorage.setItem(STORAGE_KEY, inputEl.value);
+        updatePreview();
+      });
+      if (saved) updatePreview();
+      else updateStatus();
+
+      // ── Paste-to-Markdown via Turndown ──────────────────────────────
+      var td = new TurndownService({
+        headingStyle: "atx",
+        hr: "---",
+        bulletListMarker: "-",
+        codeBlockStyle: "fenced",
+        fence: "```",
+        emDelimiter: "_",
+        strongDelimiter: "**",
+        linkStyle: "inlined",
+      });
+      if (typeof turndownPluginGfm !== "undefined")
+        td.use(turndownPluginGfm.tables);
+
+      // 自定義表格轉換規則 - 用於 GFM 插件失效時的備用方案
+      td.addRule("customTable", {
+        filter: function (node) {
+          return node.nodeName === "TABLE";
+        },
+        replacement: function (content, node) {
+          var rows = [];
+          var thead = node.querySelector("thead");
+          var tbody = node.querySelector("tbody") || node;
+
+          // 獲取所有行
+          var allRows = Array.from((thead || tbody).querySelectorAll("tr"));
+          if (!thead && allRows.length === 0)
+            allRows = Array.from(node.querySelectorAll("tr"));
+
+          allRows.forEach(function (row, rowIdx) {
+            var cells = Array.from(row.querySelectorAll("td, th"));
+            var rowMd =
+              "| " +
+              cells
+                .map(function (cell) {
+                  // 複製單元格以便操作，避免修改原始 DOM
+                  var tempCell = cell.cloneNode(true);
+
+                  // 先將 <br> 轉換成換行符，方便後續處理
+                  var brs = tempCell.querySelectorAll("br");
+                  for (var b = 0; b < brs.length; b++) {
+                    var textNode = document.createTextNode("\n");
+                    brs[b].parentNode.replaceChild(textNode, brs[b]);
+                  }
+
+                  // 將 <p> 標籤之間加入換行符
+                  var ps = tempCell.querySelectorAll("p");
+                  for (var p = 0; p < ps.length; p++) {
+                    if (p > 0) {
+                      var prevSibling = ps[p].previousSibling;
+                      if (prevSibling && prevSibling.nodeType !== 3) {
+                        ps[p].parentNode.insertBefore(
+                          document.createTextNode("\n"),
+                          ps[p],
+                        );
+                      }
+                    }
+                  }
+
+                  // 獲取文字內容，保留換行符
+                  var text = tempCell.textContent || tempCell.innerText || "";
+
+                  // 分行處理
+                  var lines = text
+                    .split("\n")
+                    .map(function (line) {
+                      return line.trim();
+                    })
+                    .filter(function (line) {
+                      return line.length > 0;
+                    });
+
+                  // 用 <br> 連接多行，並處理特殊字符
+                  var result = lines.join("<br>").replace(/\|/g, "\\|"); // 只轉義管道符，不壓縮空白
+
+                  return result;
+                })
+                .join(" | ") +
+              " |";
+            rows.push(rowMd);
+
+            // 在第一行後加入分隔行
+            if (rowIdx === 0) {
+              var sep =
+                "|" +
+                cells
+                  .map(function () {
+                    return " --- |";
+                  })
+                  .join("");
+              rows.push(sep);
+            }
+          });
+
+          return "\n" + rows.join("\n") + "\n";
+        },
+      });
+
+      td.addRule("brInTableCell", {
+        filter: function (node) {
+          if (node.nodeName !== "BR") return false;
+          var p = node.parentNode;
+          while (p) {
+            if (p.nodeName === "TD" || p.nodeName === "TH") return true;
+            if (p.nodeName === "TABLE" || p.nodeName === "BODY") break;
+            p = p.parentNode;
+          }
+          return false;
+        },
+        replacement: function () {
+          return " ";
+        },
+      });
+      td.remove(["style", "script", "noscript"]);
+
+      function cleanMd(s) {
+        return s
+          .replace(/[\u2018\u2019\u00b4]/g, "'")
+          .replace(/[\u201c\u201d\u2033]/g, '"')
+          .replace(/[\u2013\u2015]/g, "--")
+          .replace(/\u2014/g, "---")
+          .replace(/\u2026/g, "...")
+          .replace(/[\u00A0]/g, " ")
+          .replace(/[\u200B\uFEFF]/g, "")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+      }
+      function insertAtCursor(f, v) {
+        var s = f.selectionStart,
+          e = f.selectionEnd;
+        f.value = f.value.substring(0, s) + v + f.value.substring(e);
+        f.selectionStart = f.selectionEnd = s + v.length;
+        f.focus();
+      }
+      function showToast(msg) {
+        var t = document.getElementById("pasteToast");
+        t.textContent = msg;
+        t.classList.add("show");
+        clearTimeout(t._t);
+        t._t = setTimeout(function () {
+          t.classList.remove("show");
+        }, 2500);
+      }
+
+      inputEl.addEventListener("paste", function (e) {
+        var html = e.clipboardData.getData("text/html");
+        if (html && html.trim().length > 50) {
+          e.preventDefault();
+          try {
+            var md = cleanMd(td.turndown(html));
+            insertAtCursor(inputEl, md);
+            localStorage.setItem(STORAGE_KEY, inputEl.value);
+            updatePreview();
+            showToast("✓ 已將 HTML 內容自動轉換為 Markdown");
+          } catch (err) {
+            var plain = e.clipboardData.getData("text/plain");
+            if (plain) {
+              document.execCommand("insertText", false, plain);
+              updatePreview();
+            }
+          }
+        }
+      });
+
+      function smartFormat(text) {
+        if (!text) return "";
+        var lines = text
+          .split("\n")
+          .map(function (l) {
+            return l.trim();
+          })
+          .filter(function (l) {
+            return l.length > 0;
+          });
+        var result = [];
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i],
+            isH = /^#{1,6} /.test(line),
+            isHR = /^(---|___|\*\*\*)$/.test(line);
+          if ((isH || isHR) && i !== 0) result.push("");
+          result.push(line);
+          if ((isH || isHR) && i !== lines.length - 1) result.push("");
+        }
+        return result
+          .join("\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+      }
+
+      function flashIcon(id, cls) {
+        var btn = document.getElementById(id),
+          icon = btn.querySelector("i");
+        clearTimeout(btn._ft);
+        icon.className = "fas fa-check";
+        icon.style.color = "#10b981";
+        btn._ft = setTimeout(function () {
+          icon.className = cls;
+          icon.style.color = "";
+        }, 1500);
+      }
+      function fallbackCopy(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+
+      document
+        .getElementById("formatBtn")
+        .addEventListener("click", function () {
+          inputEl.value = smartFormat(inputEl.value);
           localStorage.setItem(STORAGE_KEY, inputEl.value);
           updatePreview();
-          showToast('✓ 已將 HTML 內容自動轉換為 Markdown');
-        } catch(err) {
-          var plain = e.clipboardData.getData('text/plain');
-          if (plain) { document.execCommand('insertText', false, plain); updatePreview(); }
-        }
-      }
-    });
+          flashIcon("formatBtn", "fas fa-wand-magic-sparkles");
+        });
+      document
+        .getElementById("editorCopyBtn")
+        .addEventListener("click", async function () {
+          if (!inputEl.value) return;
+          try {
+            await navigator.clipboard.writeText(inputEl.value);
+          } catch (e) {
+            fallbackCopy(inputEl.value);
+          }
+          flashIcon("editorCopyBtn", "far fa-copy");
+        });
+      document
+        .getElementById("editorDownloadBtn")
+        .addEventListener("click", function () {
+          if (!inputEl.value) return;
+          var blob = new Blob([inputEl.value], {
+            type: "text/markdown;charset=utf-8",
+          });
+          var url = URL.createObjectURL(blob),
+            a = document.createElement("a");
+          a.href = url;
+          a.download = "document.md";
+          a.click();
+          URL.revokeObjectURL(url);
+          flashIcon("editorDownloadBtn", "fas fa-file-arrow-down");
+        });
+      document
+        .getElementById("previewCopyBtn")
+        .addEventListener("click", async function () {
+          if (!mdBody.innerHTML) return;
+          try {
+            var hb = new Blob([mdBody.innerHTML], { type: "text/html" });
+            var tb = new Blob([inputEl.value], { type: "text/plain" });
+            await navigator.clipboard.write([
+              new ClipboardItem({ "text/html": hb, "text/plain": tb }),
+            ]);
+          } catch (e) {
+            try {
+              await navigator.clipboard.writeText(
+                mdBody.innerText || inputEl.value,
+              );
+            } catch (e2) {
+              fallbackCopy(mdBody.innerText || inputEl.value);
+            }
+          }
+          flashIcon("previewCopyBtn", "far fa-copy");
+        });
+      document
+        .getElementById("copyHtmlBtn")
+        .addEventListener("click", async function () {
+          if (!mdBody.innerHTML) return;
+          try {
+            await navigator.clipboard.writeText(mdBody.innerHTML);
+          } catch (e) {
+            fallbackCopy(mdBody.innerHTML);
+          }
+          flashIcon("copyHtmlBtn", "fas fa-code");
+        });
+      document.getElementById("pdfBtn").addEventListener("click", function () {
+        window.print();
+      });
 
-    function smartFormat(text) {
-      if (!text) return '';
-      var lines = text.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-      var result = [];
-      for (var i=0;i<lines.length;i++) {
-        var line=lines[i], isH=/^#{1,6} /.test(line), isHR=/^(---|___|\*\*\*)$/.test(line);
-        if ((isH||isHR)&&i!==0) result.push('');
-        result.push(line);
-        if ((isH||isHR)&&i!==lines.length-1) result.push('');
-      }
-      return result.join('\n').replace(/\n{3,}/g,'\n\n').trim();
-    }
-
-    function flashIcon(id, cls) {
-      var btn=document.getElementById(id), icon=btn.querySelector('i');
-      clearTimeout(btn._ft); icon.className='fas fa-check'; icon.style.color='#10b981';
-      btn._ft=setTimeout(function(){icon.className=cls;icon.style.color='';},1500);
-    }
-    function fallbackCopy(text) {
-      var ta=document.createElement('textarea'); ta.value=text;
-      ta.style.position='fixed'; ta.style.opacity='0';
-      document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-    }
-
-    document.getElementById('formatBtn').addEventListener('click', function() {
-      inputEl.value = smartFormat(inputEl.value);
-      localStorage.setItem(STORAGE_KEY, inputEl.value);
-      updatePreview(); flashIcon('formatBtn','fas fa-wand-magic-sparkles');
-    });
-    document.getElementById('editorCopyBtn').addEventListener('click', async function() {
-      if (!inputEl.value) return;
-      try { await navigator.clipboard.writeText(inputEl.value); } catch(e) { fallbackCopy(inputEl.value); }
-      flashIcon('editorCopyBtn','far fa-copy');
-    });
-    document.getElementById('editorDownloadBtn').addEventListener('click', function() {
-      if (!inputEl.value) return;
-      var blob=new Blob([inputEl.value],{type:'text/markdown;charset=utf-8'});
-      var url=URL.createObjectURL(blob), a=document.createElement('a');
-      a.href=url; a.download='document.md'; a.click(); URL.revokeObjectURL(url);
-      flashIcon('editorDownloadBtn','fas fa-file-arrow-down');
-    });
-    document.getElementById('previewCopyBtn').addEventListener('click', async function() {
-      if (!mdBody.innerHTML) return;
-      try {
-        var hb=new Blob([mdBody.innerHTML],{type:'text/html'});
-        var tb=new Blob([inputEl.value],{type:'text/plain'});
-        await navigator.clipboard.write([new ClipboardItem({'text/html':hb,'text/plain':tb})]);
-      } catch(e) {
-        try { await navigator.clipboard.writeText(mdBody.innerText||inputEl.value); }
-        catch(e2) { fallbackCopy(mdBody.innerText||inputEl.value); }
-      }
-      flashIcon('previewCopyBtn','far fa-copy');
-    });
-    document.getElementById('copyHtmlBtn').addEventListener('click', async function() {
-      if (!mdBody.innerHTML) return;
-      try { await navigator.clipboard.writeText(mdBody.innerHTML); } catch(e) { fallbackCopy(mdBody.innerHTML); }
-      flashIcon('copyHtmlBtn','fas fa-code');
-    });
-    document.getElementById('pdfBtn').addEventListener('click', function() { window.print(); });
-
-    var editorExpanded=false, previewExpanded=false, savedWidth=null;
-    var EXP='fas fa-up-right-and-down-left-from-center';
-    var COL='fas fa-down-left-and-up-right-to-center';
-    function setExpand(which, expand) {
-      var eI=document.querySelector('#editorExpandBtn i'), pI=document.querySelector('#previewExpandBtn i');
-      if (which==='editor') {
-        editorExpanded=expand;
-        if (expand) {
-          savedWidth=editorPanel.style.width||'50%';
-          editorPanel.style.width='100%'; editorPanel.style.flex='none'; editorPanel.style.borderRight='none';
-          previewPanel.style.display='none'; resizer.style.display='none'; eI.className=COL;
+      var editorExpanded = false,
+        previewExpanded = false,
+        savedWidth = null;
+      var EXP = "fas fa-up-right-and-down-left-from-center";
+      var COL = "fas fa-down-left-and-up-right-to-center";
+      function setExpand(which, expand) {
+        var eI = document.querySelector("#editorExpandBtn i"),
+          pI = document.querySelector("#previewExpandBtn i");
+        if (which === "editor") {
+          editorExpanded = expand;
+          if (expand) {
+            savedWidth = editorPanel.style.width || "50%";
+            editorPanel.style.width = "100%";
+            editorPanel.style.flex = "none";
+            editorPanel.style.borderRight = "none";
+            previewPanel.style.display = "none";
+            resizer.style.display = "none";
+            eI.className = COL;
+          } else {
+            editorPanel.style.width = savedWidth || "50%";
+            editorPanel.style.flex = "";
+            editorPanel.style.borderRight = "1px solid #e2e8f0";
+            previewPanel.style.display = "";
+            resizer.style.display = "";
+            eI.className = EXP;
+          }
         } else {
-          editorPanel.style.width=savedWidth||'50%'; editorPanel.style.flex=''; editorPanel.style.borderRight='1px solid #e2e8f0';
-          previewPanel.style.display=''; resizer.style.display=''; eI.className=EXP;
-        }
-      } else {
-        previewExpanded=expand;
-        if (expand) {
-          savedWidth=editorPanel.style.width||'50%';
-          previewPanel.style.width='100%'; previewPanel.style.flex='none';
-          editorPanel.style.display='none'; resizer.style.display='none'; pI.className=COL;
-        } else {
-          previewPanel.style.width=''; previewPanel.style.flex='';
-          editorPanel.style.display=''; editorPanel.style.width=savedWidth||'50%';
-          resizer.style.display=''; pI.className=EXP;
+          previewExpanded = expand;
+          if (expand) {
+            savedWidth = editorPanel.style.width || "50%";
+            previewPanel.style.width = "100%";
+            previewPanel.style.flex = "none";
+            editorPanel.style.display = "none";
+            resizer.style.display = "none";
+            pI.className = COL;
+          } else {
+            previewPanel.style.width = "";
+            previewPanel.style.flex = "";
+            editorPanel.style.display = "";
+            editorPanel.style.width = savedWidth || "50%";
+            resizer.style.display = "";
+            pI.className = EXP;
+          }
         }
       }
-    }
-    document.getElementById('editorExpandBtn').addEventListener('click', function(){if(previewExpanded)return; setExpand('editor',!editorExpanded);});
-    document.getElementById('previewExpandBtn').addEventListener('click', function(){if(editorExpanded)return; setExpand('preview',!previewExpanded);});
+      document
+        .getElementById("editorExpandBtn")
+        .addEventListener("click", function () {
+          if (previewExpanded) return;
+          setExpand("editor", !editorExpanded);
+        });
+      document
+        .getElementById("previewExpandBtn")
+        .addEventListener("click", function () {
+          if (editorExpanded) return;
+          setExpand("preview", !previewExpanded);
+        });
 
-    // Resizer: px during drag, % on release for proportional resize
-    var dragging=false, dragStartX=0, dragStartW=0;
-    resizer.addEventListener('dblclick', function(){editorPanel.style.width='50%'; editorPanel.style.flex='';});
-    resizer.addEventListener('mousedown', function(e){
-      dragging=true; dragStartX=e.clientX; dragStartW=editorPanel.getBoundingClientRect().width;
-      resizer.classList.add('dragging');
-      document.body.style.cursor='col-resize'; document.body.style.userSelect='none'; e.preventDefault();
-    });
-    window.addEventListener('mousemove', function(e){
-      if (!dragging) return;
-      var totalW=mainCont.getBoundingClientRect().width;
-      var w=dragStartW+(e.clientX-dragStartX);
-      w=Math.max(180,Math.min(totalW-resizer.offsetWidth-180,w));
-      editorPanel.style.width=w+'px'; editorPanel.style.flex='none';
-    });
-    window.addEventListener('mouseup', function(){
-      if (!dragging) return;
-      dragging=false;
-      // Convert to % so browser resize keeps the ratio
-      var totalW=mainCont.getBoundingClientRect().width;
-      var curW=editorPanel.getBoundingClientRect().width;
-      editorPanel.style.width=(curW/totalW*100).toFixed(2)+'%';
-      editorPanel.style.flex='';
-      resizer.classList.remove('dragging');
-      document.body.style.cursor=''; document.body.style.userSelect='';
-    });
+      // Resizer: px during drag, % on release for proportional resize
+      var dragging = false,
+        dragStartX = 0,
+        dragStartW = 0;
+      resizer.addEventListener("dblclick", function () {
+        editorPanel.style.width = "50%";
+        editorPanel.style.flex = "";
+      });
+      resizer.addEventListener("mousedown", function (e) {
+        dragging = true;
+        dragStartX = e.clientX;
+        dragStartW = editorPanel.getBoundingClientRect().width;
+        resizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+        e.preventDefault();
+      });
+      window.addEventListener("mousemove", function (e) {
+        if (!dragging) return;
+        var totalW = mainCont.getBoundingClientRect().width;
+        var w = dragStartW + (e.clientX - dragStartX);
+        w = Math.max(180, Math.min(totalW - resizer.offsetWidth - 180, w));
+        editorPanel.style.width = w + "px";
+        editorPanel.style.flex = "none";
+      });
+      window.addEventListener("mouseup", function () {
+        if (!dragging) return;
+        dragging = false;
+        // Convert to % so browser resize keeps the ratio
+        var totalW = mainCont.getBoundingClientRect().width;
+        var curW = editorPanel.getBoundingClientRect().width;
+        editorPanel.style.width = ((curW / totalW) * 100).toFixed(2) + "%";
+        editorPanel.style.flex = "";
+        resizer.classList.remove("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      });
 
-    updateStatus();
-  </script>
-</body>
+      updateStatus();
+
+      // ── Synchronized Scroll ─────────────────────────────────────────────────
+      var previewContent = document.getElementById("previewContent");
+      var syncScrollEnabled = true;
+      var _preventPreviewSync = false;
+      var _preventEditorSync = false;
+      var _preventPreviewSyncTimer, _preventEditorSyncTimer;
+
+      /**
+       * Walk the marked.lexer tokens of the raw markdown source to calculate which
+       * source line each top-level block starts on, then stamp data-line on the
+       * corresponding direct children of mdBody (1-to-1 correspondence, space
+       * tokens produce no DOM child and are skipped).
+       */
+      function buildScrollLineMap() {
+        if (!inputEl.value) return;
+        var tokens;
+        try {
+          tokens = marked.lexer(inputEl.value);
+        } catch (e) {
+          return;
+        }
+        var curLine = 0,
+          childIdx = 0;
+        var children = Array.from(mdBody.children);
+        for (var i = 0; i < tokens.length; i++) {
+          var tok = tokens[i];
+          if (tok.type !== "space") {
+            if (childIdx < children.length) {
+              children[childIdx].dataset.line = curLine;
+            }
+            childIdx++;
+          }
+          if (tok.raw) curLine += (tok.raw.match(/\n/g) || []).length;
+        }
+      }
+
+      function getEditorLineHeight() {
+        var lh = parseFloat(getComputedStyle(inputEl).lineHeight);
+        if (!lh || isNaN(lh))
+          lh = parseFloat(getComputedStyle(inputEl).fontSize) * 1.65;
+        return lh || 22;
+      }
+
+      /** Current source line visible at the top of the editor viewport */
+      function getEditorTopLine() {
+        return inputEl.scrollTop / getEditorLineHeight();
+      }
+
+      /**
+       * Get element's top offset relative to the previewContent scroll container,
+       * accounting for current scroll position. Safe regardless of offsetParent chain.
+       */
+      function getElTopInPreview(el) {
+        var pcRect = previewContent.getBoundingClientRect();
+        var elRect = el.getBoundingClientRect();
+        return elRect.top - pcRect.top + previewContent.scrollTop;
+      }
+
+      /** Scroll preview so that content matching source line `lineNum` is visible */
+      function scrollPreviewToLine(lineNum) {
+        var maxScroll =
+          previewContent.scrollHeight - previewContent.clientHeight;
+        if (maxScroll <= 0) return;
+
+        var els = Array.from(mdBody.querySelectorAll("[data-line]"));
+
+        if (els.length === 0) {
+          var totalLines = Math.max(1, inputEl.value.split("\n").length);
+          previewContent.scrollTop = (lineNum / totalLines) * maxScroll;
+          return;
+        }
+
+        // If editor is at the very bottom, push preview to the very bottom too
+        var maxEditorScroll = inputEl.scrollHeight - inputEl.clientHeight;
+        if (maxEditorScroll > 0 && inputEl.scrollTop >= maxEditorScroll - 2) {
+          previewContent.scrollTop = maxScroll;
+          return;
+        }
+
+        // Find bracketing anchor elements
+        var lower = null,
+          upper = null;
+        for (var i = 0; i < els.length; i++) {
+          var elLine = parseInt(els[i].dataset.line);
+          if (elLine <= lineNum) {
+            lower = els[i];
+          } else if (!upper) {
+            upper = els[i];
+            break;
+          }
+        }
+
+        if (!lower) {
+          previewContent.scrollTop = 0;
+          return;
+        }
+
+        var lowerTop = getElTopInPreview(lower);
+        if (!upper) {
+          previewContent.scrollTop = Math.min(lowerTop, maxScroll);
+          return;
+        }
+
+        var upperTop = getElTopInPreview(upper);
+        var lowerLine = parseInt(lower.dataset.line);
+        var upperLine = parseInt(upper.dataset.line);
+        var span = upperLine - lowerLine;
+        if (span <= 0) {
+          previewContent.scrollTop = Math.min(lowerTop, maxScroll);
+          return;
+        }
+
+        var frac = (lineNum - lowerLine) / span;
+        previewContent.scrollTop = Math.min(
+          lowerTop + frac * (upperTop - lowerTop),
+          maxScroll,
+        );
+      }
+
+      /** Scroll editor so that the source line matching current preview viewport top is visible */
+      function scrollEditorFromPreview() {
+        var scrollTop = previewContent.scrollTop;
+        var maxPreviewScroll =
+          previewContent.scrollHeight - previewContent.clientHeight;
+        var maxEditorScroll = inputEl.scrollHeight - inputEl.clientHeight;
+        if (maxPreviewScroll <= 0 || maxEditorScroll <= 0) return;
+
+        if (scrollTop >= maxPreviewScroll - 2) {
+          inputEl.scrollTop = maxEditorScroll;
+          return;
+        }
+
+        var els = Array.from(mdBody.querySelectorAll("[data-line]"));
+        if (els.length === 0) {
+          inputEl.scrollTop = (scrollTop / maxPreviewScroll) * maxEditorScroll;
+          return;
+        }
+
+        var lower = null,
+          upper = null;
+        for (var i = 0; i < els.length; i++) {
+          var elTop = getElTopInPreview(els[i]);
+          if (elTop <= scrollTop) {
+            lower = els[i];
+          } else if (!upper) {
+            upper = els[i];
+            break;
+          }
+        }
+
+        var targetLine;
+        if (!lower) {
+          targetLine = 0;
+        } else if (!upper) {
+          var lowerLine = parseInt(lower.dataset.line);
+          var totalLines = inputEl.value.split("\n").length;
+          var lowerTop = getElTopInPreview(lower);
+          var remaining = maxPreviewScroll - lowerTop;
+          targetLine =
+            remaining > 0
+              ? lowerLine +
+                ((scrollTop - lowerTop) / remaining) * (totalLines - lowerLine)
+              : lowerLine;
+        } else {
+          var lTop = getElTopInPreview(lower);
+          var uTop = getElTopInPreview(upper);
+          var lLine = parseInt(lower.dataset.line);
+          var uLine = parseInt(upper.dataset.line);
+          var s = uTop - lTop;
+          targetLine =
+            s <= 0 ? lLine : lLine + ((scrollTop - lTop) / s) * (uLine - lLine);
+        }
+
+        inputEl.scrollTop = Math.min(
+          targetLine * getEditorLineHeight(),
+          maxEditorScroll,
+        );
+      }
+
+      // ── Scroll event listeners ───────────────────────────────────────────────
+      inputEl.addEventListener("scroll", function () {
+        if (!syncScrollEnabled || _preventEditorSync) return;
+        _preventPreviewSync = true;
+        clearTimeout(_preventPreviewSyncTimer);
+        scrollPreviewToLine(getEditorTopLine());
+        _preventPreviewSyncTimer = setTimeout(function () {
+          _preventPreviewSync = false;
+        }, 80);
+      });
+
+      previewContent.addEventListener("scroll", function () {
+        if (!syncScrollEnabled || _preventPreviewSync) return;
+        _preventEditorSync = true;
+        clearTimeout(_preventEditorSyncTimer);
+        scrollEditorFromPreview();
+        _preventEditorSyncTimer = setTimeout(function () {
+          _preventEditorSync = false;
+        }, 80);
+      });
+
+      // ── Toggle button ────────────────────────────────────────────────────────
+      document
+        .getElementById("syncScrollBtn")
+        .addEventListener("click", function () {
+          syncScrollEnabled = !syncScrollEnabled;
+          var icon = this.querySelector("i");
+          if (syncScrollEnabled) {
+            icon.className = "fas fa-link";
+            icon.style.color = "#10b981";
+            showToast("同步捲動 已開啟");
+          } else {
+            icon.className = "fas fa-link-slash";
+            icon.style.color = "#94a3b8";
+            showToast("同步捲動 已關閉");
+          }
+        });
+    </script>
+  </body>
 </html>
