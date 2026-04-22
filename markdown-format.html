@@ -9,7 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-light.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -59,7 +59,8 @@
     .markdown-body pre > code.hljs { display: block; border-radius: 8px; font-size: 13px; line-height: 1.6; padding: 16px 18px; background-color: #282c34; }
     .markdown-body code:not(.hljs) { background: #f6f8fa; color: #d63384; padding: 2px 6px; border-radius: 4px; font-size: 0.875em; border: 1px solid #e2e8f0; }
     .markdown-body .math-block { overflow-x: auto; padding: 10px 0; text-align: center; margin: 1em 0; }
-    .markdown-body .mermaid-wrap { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; overflow-x: auto; }
+    .markdown-body .mermaid-wrap { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; margin: 20px 0; text-align: center; overflow-x: auto; }
+    .markdown-body .mermaid-wrap svg { max-width: 100%; height: auto; display: inline-block; }
     .markdown-body .abc-wrap { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0; text-align: center; overflow-x: auto; }
     .markdown-body .abc-wrap svg { max-width: 100%; height: auto; }
     .markdown-body table { width: 100% !important; display: table !important; table-layout: fixed !important; border-collapse: collapse !important; margin: 16px 0 !important; }
@@ -137,7 +138,19 @@
     <span>Luster Markdown Studio</span>
   </div>
   <script>
-    mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      themeVariables: {
+        fontSize: '16px',
+        fontFamily: 'Arial, sans-serif'
+      },
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    });
 
     marked.use({
       gfm: true, breaks: true,
