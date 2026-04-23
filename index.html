@@ -705,6 +705,65 @@
       if (saved) updatePreview();
       else updateStatus();
 
+      // ── Undo History (Ctrl+Z / ⌘+Z) ────────────────────────────────────────
+      var undoStack = [];
+      var MAX_UNDO = 100;
+      var _undoTypingBurst = false;
+      var _undoBurstTimer = null;
+
+      function saveUndoState() {
+        var val = inputEl.value;
+        var ss = inputEl.selectionStart;
+        var se = inputEl.selectionEnd;
+        if (
+          undoStack.length > 0 &&
+          undoStack[undoStack.length - 1].value === val
+        )
+          return;
+        undoStack.push({ value: val, selStart: ss, selEnd: se });
+        if (undoStack.length > MAX_UNDO) undoStack.shift();
+      }
+
+      function performUndo() {
+        if (undoStack.length === 0) return;
+        _undoTypingBurst = false;
+        clearTimeout(_undoBurstTimer);
+        var state = undoStack.pop();
+        inputEl.value = state.value;
+        try {
+          inputEl.setSelectionRange(state.selStart, state.selEnd);
+        } catch (e) {}
+        localStorage.setItem(STORAGE_KEY, inputEl.value);
+        updatePreview();
+        showToast("↩ 已復原");
+      }
+
+      // 儲存初始狀態
+      saveUndoState();
+
+      // 每次打字 burst 開始時，先存快照
+      inputEl.addEventListener("keydown", function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === "z") return;
+        if (!_undoTypingBurst) {
+          saveUndoState();
+          _undoTypingBurst = true;
+        }
+        clearTimeout(_undoBurstTimer);
+        _undoBurstTimer = setTimeout(function () {
+          _undoTypingBurst = false;
+        }, 1000);
+      });
+
+      // 攔截 Ctrl+Z / ⌘+Z（僅當 editor 取得焦點時）
+      document.addEventListener("keydown", function (e) {
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z") {
+          if (document.activeElement === inputEl) {
+            e.preventDefault();
+            performUndo();
+          }
+        }
+      });
+
       // ── Paste-to-Markdown via Turndown ──────────────────────────────
       var td = new TurndownService({
         headingStyle: "atx",
@@ -821,16 +880,20 @@
       td.remove(["style", "script", "noscript"]);
 
       function cleanMd(s) {
-        return s
-          .replace(/[\u2018\u2019\u00b4]/g, "'")
-          .replace(/[\u201c\u201d\u2033]/g, '"')
-          .replace(/[\u2013\u2015]/g, "--")
-          .replace(/\u2014/g, "---")
-          .replace(/\u2026/g, "...")
-          .replace(/[\u00A0]/g, " ")
-          .replace(/[\u200B\uFEFF]/g, "")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
+        return (
+          s
+            .replace(/[\u2018\u2019\u00b4]/g, "'")
+            .replace(/[\u201c\u201d\u2033]/g, '"')
+            .replace(/[\u2013\u2015]/g, "--")
+            .replace(/\u2014/g, "---")
+            .replace(/\u2026/g, "...")
+            .replace(/[\u00A0]/g, " ")
+            .replace(/[\u200B\uFEFF]/g, "")
+            .replace(/\n{3,}/g, "\n\n")
+            // 在 **粗體** 或 *斜體* 結尾緊接非空白字元時補空格，確保 markdown 語法有效
+            .replace(/(\*{1,2}[^*\n]+\*{1,2})([^\s*\n])/g, "$1 $2")
+            .trim()
+        );
       }
       function insertAtCursor(f, v) {
         var s = f.selectionStart,
@@ -849,24 +912,60 @@
         }, 2500);
       }
 
+      /**
+       * 方案 A：偵測 HTML 是否含有語義標籤（來自網頁/文件），
+       *         還是只有樣式化標籤（來自程式碼編輯器的語法高亮）。
+       * 語義標籤：h1-h6, p, ul, ol, li, blockquote, table, strong, em, a, img, hr, pre, code
+       * 純樣式化：只有 div + span（with style attr），無任何語義結構
+       */
+      function hasSemanticHtml(html) {
+        return /<(h[1-6]|p|ul|ol|li|blockquote|table|thead|tbody|tr|td|th|strong|em|b|i|a\s|img\s|hr|pre|code)[>\s]/i.test(
+          html,
+        );
+      }
+
+      /**
+       * 方案 B：偵測 Turndown 轉換結果是否過度 escape。
+       * 若反斜線密度超過閾值（每 80 字就有 1 個 \），視為轉換錯誤，退回 plain text。
+       */
+      function isTurndownOverEscaped(md, plain) {
+        if (!plain || !md) return false;
+        var backslashCount = (md.match(/\\/g) || []).length;
+        var density = backslashCount / Math.max(md.length, 1);
+        return density > 0.012; // 約每 80 字 1 個 \ 即觸發
+      }
+
       inputEl.addEventListener("paste", function (e) {
         var html = e.clipboardData.getData("text/html");
-        if (html && html.trim().length > 50) {
+        var plain = e.clipboardData.getData("text/plain");
+
+        // 有 HTML 且含語義標籤 → 走 Turndown 轉換
+        if (html && html.trim().length > 50 && hasSemanticHtml(html)) {
           e.preventDefault();
           try {
             var md = cleanMd(td.turndown(html));
-            insertAtCursor(inputEl, md);
-            localStorage.setItem(STORAGE_KEY, inputEl.value);
-            updatePreview();
-            showToast("✓ 已將 HTML 內容自動轉換為 Markdown");
+            // 方案 B：若轉出來 backslash 密度異常高，退回 plain text
+            if (isTurndownOverEscaped(md, plain)) {
+              saveUndoState();
+              insertAtCursor(inputEl, plain || md);
+              localStorage.setItem(STORAGE_KEY, inputEl.value);
+              updatePreview();
+              // 靜默貼入，不顯示 toast（等同一般貼上）
+            } else {
+              saveUndoState();
+              insertAtCursor(inputEl, md);
+              localStorage.setItem(STORAGE_KEY, inputEl.value);
+              updatePreview();
+              showToast("✓ 已將 HTML 內容自動轉換為 Markdown");
+            }
           } catch (err) {
-            var plain = e.clipboardData.getData("text/plain");
             if (plain) {
               document.execCommand("insertText", false, plain);
               updatePreview();
             }
           }
         }
+        // 其餘情況（純文字、程式碼編輯器語法高亮 HTML）→ 讓瀏覽器預設行為處理 plain text
       });
 
       function smartFormat(text) {
@@ -919,6 +1018,7 @@
       document
         .getElementById("formatBtn")
         .addEventListener("click", function () {
+          saveUndoState();
           inputEl.value = smartFormat(inputEl.value);
           localStorage.setItem(STORAGE_KEY, inputEl.value);
           updatePreview();
