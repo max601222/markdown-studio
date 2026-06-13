@@ -789,11 +789,15 @@
         replacement: function (content, node) {
           var rows = [];
           var thead = node.querySelector("thead");
-          var tbody = node.querySelector("tbody") || node;
+          var tbody = node.querySelector("tbody");
 
-          // 獲取所有行
-          var allRows = Array.from((thead || tbody).querySelectorAll("tr"));
-          if (!thead && allRows.length === 0)
+          // 獲取所有行：thead + tbody（若缺少分段，退回整張表）
+          var allRows = [];
+          if (thead)
+            allRows = allRows.concat(Array.from(thead.querySelectorAll("tr")));
+          if (tbody)
+            allRows = allRows.concat(Array.from(tbody.querySelectorAll("tr")));
+          if (allRows.length === 0)
             allRows = Array.from(node.querySelectorAll("tr"));
 
           allRows.forEach(function (row, rowIdx) {
