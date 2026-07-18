@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Luster Markdown Studio</title>
     <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+    <script src="./markdown-normalizer.js"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"
@@ -643,10 +644,11 @@
 
       var mermaidSeq = 0;
       async function updatePreview() {
-        var ex = extractMath(inputEl.value || "");
+        var previewMarkdown = normalizeNestedFenceEnvelope(inputEl.value || "");
+        var ex = extractMath(previewMarkdown);
         var html = restoreMath(marked.parse(ex.md), ex.blocks, ex.inlines);
         mdBody.innerHTML = html;
-        buildScrollLineMap();
+        buildScrollLineMap(previewMarkdown);
 
         // 渲染 Mermaid 圖表
         var diags = mdBody.querySelectorAll(".mermaid");
@@ -1199,16 +1201,16 @@
       var _preventPreviewSyncTimer, _preventEditorSyncTimer;
 
       /**
-       * Walk the marked.lexer tokens of the raw markdown source to calculate which
+       * Walk the marked.lexer tokens of the preview markdown to calculate which
        * source line each top-level block starts on, then stamp data-line on the
        * corresponding direct children of mdBody (1-to-1 correspondence, space
        * tokens produce no DOM child and are skipped).
        */
-      function buildScrollLineMap() {
-        if (!inputEl.value) return;
+      function buildScrollLineMap(sourceMarkdown) {
+        if (!sourceMarkdown) return;
         var tokens;
         try {
-          tokens = marked.lexer(inputEl.value);
+          tokens = marked.lexer(sourceMarkdown);
         } catch (e) {
           return;
         }
