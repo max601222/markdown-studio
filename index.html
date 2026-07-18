@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Luster Markdown Studio</title>
     <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
-    <script src="./markdown-normalizer.js"></script>
+    <script src="./markdown-normalizer.js?v=20260718-2"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"
@@ -28,6 +28,7 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&display=swap");
       *,
@@ -465,6 +466,10 @@
         <div class="panel-header">
           <span class="panel-title">Editor</span>
           <div class="panel-actions">
+            <button class="icon-btn" id="openFileBtn">
+              <i class="far fa-folder-open"></i
+              ><span class="tooltip">開啟文件（MD/TXT/HTML/DOCX/PDF）</span>
+            </button>
             <button class="icon-btn" id="formatBtn">
               <i class="fas fa-wand-magic-sparkles"></i
               ><span class="tooltip">Format</span>
@@ -492,6 +497,12 @@
           class="custom-scroll"
           placeholder="可直接貼上從網頁複製的內容，系統會自動轉換為 Markdown。&#10;You can paste content copied from a webpage, and it will be automatically converted to Markdown."
         ></textarea>
+        <input
+          id="fileInput"
+          type="file"
+          hidden
+          accept=".md,.markdown,.mdown,.mkd,.txt,.text,.html,.htm,.xhtml,.docx,.pdf,.csv,.tsv,.json,.xml,.yaml,.yml,.log,text/plain,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        />
         <div class="panel-status">
           <span id="editorCharCount">0 chars</span>
           <span id="editorLineCount">0 lines</span>
@@ -944,6 +955,16 @@
         return density > 0.012; // 約每 80 字 1 個 \ 即觸發
       }
 
+      function htmlToMarkdown(html) {
+        if (typeof DOMPurify === "undefined")
+          throw new Error("HTML 安全處理器載入失敗");
+        var safeHtml = DOMPurify.sanitize(html, {
+          USE_PROFILES: { html: true },
+          FORBID_TAGS: ["script", "style", "iframe", "object", "embed"],
+        });
+        return cleanMd(td.turndown(safeHtml));
+      }
+
       inputEl.addEventListener("paste", function (e) {
         var html = e.clipboardData.getData("text/html");
         var plain = e.clipboardData.getData("text/plain");
@@ -952,7 +973,7 @@
         if (html && html.trim().length > 50 && hasSemanticHtml(html)) {
           e.preventDefault();
           try {
-            var md = cleanMd(td.turndown(html));
+            var md = htmlToMarkdown(html);
             // 方案 B：若轉出來 backslash 密度異常高，退回 plain text
             if (isTurndownOverEscaped(md, plain)) {
               saveUndoState();
@@ -1023,6 +1044,202 @@
         document.execCommand("copy");
         document.body.removeChild(ta);
       }
+
+      // ── Open local documents ────────────────────────────────────────────────
+      var MAX_IMPORT_BYTES = 25 * 1024 * 1024;
+      var importerScriptLoads = {};
+      var MAMMOTH_URL =
+        "https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js";
+      var PDFJS_URL =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      var PDFJS_WORKER_URL =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      function getFileExtension(name) {
+        var match = String(name || "")
+          .toLowerCase()
+          .match(/\.([^.]+)$/);
+        return match ? match[1] : "";
+      }
+
+      function loadImporterScript(src, globalName) {
+        if (window[globalName]) return Promise.resolve(window[globalName]);
+        if (importerScriptLoads[src]) return importerScriptLoads[src];
+
+        importerScriptLoads[src] = new Promise(function (resolve, reject) {
+          var script = document.createElement("script");
+          script.src = src;
+          script.onload = function () {
+            if (window[globalName]) resolve(window[globalName]);
+            else reject(new Error("文件解析器載入失敗"));
+          };
+          script.onerror = function () {
+            reject(new Error("文件解析器載入失敗，請檢查網路連線"));
+          };
+          document.head.appendChild(script);
+        });
+        return importerScriptLoads[src];
+      }
+
+      function normalizeImportedText(text) {
+        return String(text || "")
+          .replace(/^\uFEFF/, "")
+          .replace(/\r\n?/g, "\n");
+      }
+
+      async function importDocx(file) {
+        var mammothApi = await loadImporterScript(MAMMOTH_URL, "mammoth");
+        var result = await mammothApi.convertToHtml(
+          { arrayBuffer: await file.arrayBuffer() },
+          {
+            // Embedded images cannot be persisted safely in localStorage.
+            convertImage: mammothApi.images.imgElement(function () {
+              return { src: "", alt: "[圖片]" };
+            }),
+          },
+        );
+        return htmlToMarkdown(result.value);
+      }
+
+      async function importPdf(file) {
+        var pdfApi = await loadImporterScript(PDFJS_URL, "pdfjsLib");
+        pdfApi.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+        var documentTask = pdfApi.getDocument({
+          data: new Uint8Array(await file.arrayBuffer()),
+        });
+        var pdf = await documentTask.promise;
+        var pages = [];
+
+        for (var pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+          var page = await pdf.getPage(pageNumber);
+          var content = await page.getTextContent();
+          var lines = [];
+          var currentLine = "";
+          var lastY = null;
+
+          content.items.forEach(function (item) {
+            var y = item.transform ? Math.round(item.transform[5]) : lastY;
+            if (lastY !== null && y !== null && Math.abs(y - lastY) > 2) {
+              if (currentLine.trim()) lines.push(currentLine.trim());
+              currentLine = "";
+            }
+            if (
+              currentLine &&
+              item.str &&
+              !/\s$/.test(currentLine) &&
+              !/^\s/.test(item.str)
+            )
+              currentLine += " ";
+            currentLine += item.str || "";
+            lastY = y;
+            if (item.hasEOL) {
+              if (currentLine.trim()) lines.push(currentLine.trim());
+              currentLine = "";
+              lastY = null;
+            }
+          });
+          if (currentLine.trim()) lines.push(currentLine.trim());
+          pages.push(lines.join("\n"));
+        }
+
+        var text = pages.join("\n\n---\n\n").trim();
+        if (!text)
+          throw new Error("此 PDF 沒有可擷取的文字，可能是掃描影像文件");
+        return text;
+      }
+
+      async function fileToMarkdown(file) {
+        if (!file) throw new Error("未選擇檔案");
+        if (file.size > MAX_IMPORT_BYTES)
+          throw new Error("檔案超過 25 MB，請先縮小檔案後再開啟");
+
+        var extension = getFileExtension(file.name);
+        if (extension === "doc")
+          throw new Error("舊版 .doc 無法直接解析，請先另存為 .docx");
+
+        var textExtensions = [
+          "md",
+          "markdown",
+          "mdown",
+          "mkd",
+          "txt",
+          "text",
+          "csv",
+          "tsv",
+          "json",
+          "xml",
+          "yaml",
+          "yml",
+          "log",
+        ];
+        if (
+          textExtensions.indexOf(extension) !== -1 ||
+          file.type === "text/plain"
+        )
+          return normalizeImportedText(await file.text());
+
+        if (
+          ["html", "htm", "xhtml"].indexOf(extension) !== -1 ||
+          file.type === "text/html"
+        )
+          return htmlToMarkdown(await file.text());
+
+        if (extension === "docx") return importDocx(file);
+        if (extension === "pdf" || file.type === "application/pdf")
+          return importPdf(file);
+
+        throw new Error(
+          "不支援此文件格式；請改用 Markdown、文字、HTML、DOCX 或 PDF",
+        );
+      }
+
+      var openFileBtn = document.getElementById("openFileBtn");
+      var fileInput = document.getElementById("fileInput");
+
+      openFileBtn.addEventListener("click", function () {
+        fileInput.value = "";
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", async function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        var icon = openFileBtn.querySelector("i");
+        var originalIconClass = icon.className;
+        openFileBtn.disabled = true;
+        icon.className = "fas fa-spinner fa-spin";
+        showToast("正在開啟「" + file.name + "」…");
+
+        try {
+          var markdown = await fileToMarkdown(file);
+          if (!markdown.trim()) throw new Error("文件沒有可匯入的文字內容");
+
+          saveUndoState();
+          inputEl.value = markdown;
+          inputEl.selectionStart = inputEl.selectionEnd = markdown.length;
+          inputEl.focus();
+
+          var persisted = true;
+          try {
+            localStorage.setItem(STORAGE_KEY, inputEl.value);
+          } catch (storageError) {
+            persisted = false;
+          }
+          updatePreview();
+          showToast(
+            persisted
+              ? "✓ 已開啟「" + file.name + "」並轉換為 Markdown"
+              : "✓ 文件已開啟，但內容過大，無法保留到下次使用",
+          );
+        } catch (error) {
+          showToast("無法開啟文件：" + error.message);
+        } finally {
+          openFileBtn.disabled = false;
+          icon.className = originalIconClass;
+          fileInput.value = "";
+        }
+      });
 
       document
         .getElementById("formatBtn")

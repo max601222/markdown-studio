@@ -52,6 +52,12 @@ function normalizeNestedFenceEnvelope(markdown) {
   function isSectionClose(index, headingLevel) {
     for (var nextLine = index + 1; nextLine < lines.length; nextLine++) {
       if (/^\s*$/.test(lines[nextLine])) continue;
+      if (
+        /^ {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})$/.test(
+          lines[nextLine],
+        )
+      )
+        continue;
       if (!headingLevel) return false;
 
       var heading = lines[nextLine].match(/^ {0,3}(#{1,6})[ \t]+/);

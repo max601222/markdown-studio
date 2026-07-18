@@ -77,6 +77,51 @@ test("expands an embedded prompt wrapper until the next peer section", () => {
   assert.equal(lines[30], "```");
 });
 
+test("allows a thematic break between an embedded wrapper and the next section", () => {
+  const markdown = [
+    "# Kanban Dashboard",
+    "",
+    "## 🚀 建置 Prompt",
+    "",
+    "---",
+    "",
+    "```",
+    "請建立 Kanban Dashboard。",
+    "",
+    "### 型別定義",
+    "",
+    "```typescript",
+    "interface Task { id: string }",
+    "```",
+    "",
+    "### 環境變數",
+    "",
+    "```",
+    "PORT=3000",
+    "```",
+    "",
+    "### UI/UX 設計要求",
+    "",
+    "Phase 9：AI 整合",
+    "```",
+    "",
+    "---",
+    "",
+    "## 🔧 建置後設定",
+    "",
+    "```bash",
+    "mkdir -p public/uploads",
+    "```",
+  ].join("\n");
+
+  const normalized = normalizeNestedFenceEnvelope(markdown);
+  const lines = normalized.split("\n");
+
+  assert.equal(lines[6], "````");
+  assert.equal(lines[24], "````");
+  assert.equal(lines[30], "```bash");
+});
+
 test("leaves a regular fenced block unchanged", () => {
   const markdown = "```js\nconsole.log('ok');\n```";
   assert.equal(normalizeNestedFenceEnvelope(markdown), markdown);
@@ -114,6 +159,27 @@ test("does not repair an embedded wrapper without a direct section boundary", ()
     "This paragraph still belongs to the section.",
     "",
     "## Next section",
+  ].join("\n");
+
+  assert.equal(normalizeNestedFenceEnvelope(markdown), markdown);
+});
+
+test("does not treat a thematic break followed by a paragraph as a section boundary", () => {
+  const markdown = [
+    "## Prompt",
+    "",
+    "```",
+    "```typescript",
+    "type Id = string;",
+    "```",
+    "```",
+    "PORT=3001",
+    "```",
+    "```",
+    "",
+    "---",
+    "",
+    "This paragraph still belongs to the section.",
   ].join("\n");
 
   assert.equal(normalizeNestedFenceEnvelope(markdown), markdown);
