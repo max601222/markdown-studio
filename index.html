@@ -103,6 +103,212 @@
         flex: 1;
         overflow: hidden;
         min-height: 0;
+        position: relative;
+      }
+      #tocSidebar {
+        --toc-width: 272px;
+        --toc-expanded-width: var(--toc-width);
+        width: 40px;
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+        overflow: hidden;
+        position: relative;
+        z-index: 30;
+        transition:
+          width 240ms cubic-bezier(0.22, 1, 0.36, 1),
+          box-shadow 240ms ease;
+      }
+      #tocSidebar.expanded {
+        width: var(--toc-expanded-width);
+      }
+      #tocSidebar.resizing {
+        transition: none;
+      }
+      .toc-header {
+        height: 36px;
+        flex: 0 0 36px;
+        position: relative;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .toc-title {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        width: 170px;
+        transform: translateY(-50%) translateX(-5px);
+        opacity: 0;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        user-select: none;
+        transition:
+          opacity 100ms ease,
+          transform 160ms ease;
+      }
+      #tocSidebar.expanded .toc-title {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+        transition-delay: 60ms;
+      }
+      #tocToggleBtn {
+        position: absolute;
+        top: 4px;
+        left: 5px;
+        transition:
+          left 240ms cubic-bezier(0.22, 1, 0.36, 1),
+          background 0.12s,
+          color 0.12s;
+      }
+      #tocSidebar.expanded #tocToggleBtn {
+        left: calc(var(--toc-expanded-width) - 34px);
+      }
+      #tocSidebar.resizing #tocToggleBtn {
+        transition: none;
+      }
+      #tocToggleBtn:not(:disabled) {
+        color: #475569;
+      }
+      #tocToggleBtn:not(:disabled)::before {
+        content: "";
+        position: absolute;
+        left: -5px;
+        top: 6px;
+        bottom: 6px;
+        width: 2px;
+        border-radius: 2px;
+        background: #10b981;
+        opacity: 0.85;
+        transition: opacity 120ms ease;
+      }
+      #tocSidebar.expanded #tocToggleBtn::before {
+        opacity: 0;
+      }
+      #tocToggleBtn:disabled {
+        cursor: not-allowed;
+        color: #cbd5e1;
+      }
+      .toc-list-clip {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        overflow: hidden;
+      }
+      #tocList {
+        width: var(--toc-expanded-width);
+        height: 100%;
+        padding: 10px 8px 18px;
+        overflow-y: auto;
+        opacity: 0;
+        transform: translateX(-6px);
+        pointer-events: none;
+        transition:
+          opacity 110ms ease,
+          transform 160ms ease;
+      }
+      #tocSidebar.expanded #tocList {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+        transition-delay: 90ms;
+      }
+      .toc-item {
+        width: 100%;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        position: relative;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: #64748b;
+        font: inherit;
+        font-size: 12px;
+        line-height: 1.4;
+        text-align: left;
+        cursor: pointer;
+        padding: 6px 10px;
+        transition:
+          background 120ms ease,
+          color 120ms ease;
+      }
+      .toc-item:hover {
+        background: #eef2f7;
+        color: #334155;
+      }
+      .toc-item.level-1 {
+        color: #334155;
+        font-weight: 600;
+      }
+      .toc-item.level-2 {
+        padding-left: 22px;
+      }
+      .toc-item.level-3 {
+        padding-left: 36px;
+        color: #7c8a9e;
+      }
+      .toc-item.active {
+        background: #ecfdf5;
+        color: #047857;
+        font-weight: 600;
+      }
+      .toc-item.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 5px;
+        bottom: 5px;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
+        background: #10b981;
+      }
+      .toc-item-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #tocResizer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 4px;
+        z-index: 45;
+        cursor: col-resize;
+        touch-action: none;
+        background: transparent;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 120ms ease,
+          background 120ms ease;
+      }
+      #tocResizer::before {
+        content: "";
+        position: absolute;
+        inset: 0 -5px 0 -6px;
+      }
+      #tocSidebar.expanded #tocResizer {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      #tocResizer:hover,
+      #tocResizer.dragging,
+      #tocResizer:focus-visible {
+        background: #3b82f6;
+        outline: none;
+      }
+      #workspace {
+        display: flex;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
       }
       .panel-wrap {
         display: flex;
@@ -407,6 +613,7 @@
       @media print {
         #navbar,
         #appFooter,
+        #tocSidebar,
         #editorPanel,
         #resizer,
         .panel-header,
@@ -423,6 +630,10 @@
           display: block;
           overflow: visible;
           height: auto;
+        }
+        #workspace {
+          display: block;
+          overflow: visible;
         }
         #previewPanel {
           display: block !important;
@@ -451,6 +662,34 @@
           page-break-inside: avoid;
         }
       }
+      @media (max-width: 1199px) {
+        #tocSidebar {
+          --toc-expanded-width: min(var(--toc-width), 85vw);
+          position: absolute;
+          inset: 0 auto 0 0;
+          width: 40px;
+        }
+        #tocSidebar.expanded {
+          box-shadow: 8px 0 24px rgba(15, 23, 42, 0.14);
+        }
+        #workspace {
+          margin-left: 40px;
+        }
+      }
+      @media (max-width: 767px) {
+        #tocResizer {
+          display: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #tocSidebar,
+        #tocToggleBtn,
+        .toc-title,
+        #tocList,
+        #tocResizer {
+          transition: none !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -460,7 +699,45 @@
       <h1>Luster Markdown Studio</h1>
     </div>
     <div id="mainContainer">
-      <div id="editorPanel" class="panel-wrap">
+      <aside id="tocSidebar" aria-label="文件目錄">
+        <div class="toc-header">
+          <span class="toc-title">Contents</span>
+          <button
+            class="icon-btn"
+            id="tocToggleBtn"
+            type="button"
+            aria-label="展開目錄"
+            aria-expanded="false"
+            aria-controls="tocList"
+            title="展開目錄"
+            disabled
+          >
+            <i class="fas fa-list-ul"></i>
+          </button>
+        </div>
+        <div class="toc-list-clip">
+          <nav
+            id="tocList"
+            class="custom-scroll"
+            aria-label="文件標題"
+            aria-hidden="true"
+          ></nav>
+        </div>
+        <div
+          id="tocResizer"
+          role="separator"
+          aria-label="調整目錄寬度"
+          aria-orientation="vertical"
+          aria-valuemin="220"
+          aria-valuemax="520"
+          aria-valuenow="272"
+          aria-hidden="true"
+          tabindex="-1"
+          title="拖曳調整目錄寬度；雙擊恢復預設"
+        ></div>
+      </aside>
+      <div id="workspace">
+        <div id="editorPanel" class="panel-wrap">
         <div class="panel-header">
           <span class="panel-title">Editor</span>
           <div class="panel-actions">
@@ -495,41 +772,42 @@
           <span id="editorCharCount">0 chars</span>
           <span id="editorLineCount">0 lines</span>
         </div>
-      </div>
-      <div id="resizer">
-        <div id="resizerIcon">
-          <i class="fas fa-chevron-left"></i
-          ><i class="fas fa-chevron-right"></i>
         </div>
-      </div>
-      <div id="previewPanel" class="panel-wrap">
-        <div class="panel-header">
-          <span class="panel-title">Preview</span>
-          <div class="panel-actions">
-            <button class="icon-btn" id="previewCopyBtn">
-              <i class="far fa-copy"></i><span class="tooltip">Copy</span>
-            </button>
-            <button class="icon-btn" id="copyHtmlBtn">
-              <i class="fas fa-code"></i><span class="tooltip">Copy HTML</span>
-            </button>
-            <button class="icon-btn" id="pdfBtn">
-              <i class="fas fa-file-pdf"></i
-              ><span class="tooltip">Download PDF</span>
-            </button>
-            <button class="icon-btn" id="previewExpandBtn">
-              <i class="fas fa-up-right-and-down-left-from-center"></i
-              ><span class="tooltip">Expand</span>
-            </button>
+        <div id="resizer">
+          <div id="resizerIcon">
+            <i class="fas fa-chevron-left"></i
+            ><i class="fas fa-chevron-right"></i>
           </div>
         </div>
-        <div id="previewContent" class="custom-scroll">
-          <div id="markdownBody" class="markdown-body"></div>
-        </div>
-        <div class="panel-status">
-          <span id="previewCharCount">0 rendered chars</span>
-          <span style="color: #10b981; font-weight: 500"
-            >PDF-ready &middot; LaTeX &#10003;</span
-          >
+        <div id="previewPanel" class="panel-wrap">
+          <div class="panel-header">
+            <span class="panel-title">Preview</span>
+            <div class="panel-actions">
+              <button class="icon-btn" id="previewCopyBtn">
+                <i class="far fa-copy"></i><span class="tooltip">Copy</span>
+              </button>
+              <button class="icon-btn" id="copyHtmlBtn">
+                <i class="fas fa-code"></i><span class="tooltip">Copy HTML</span>
+              </button>
+              <button class="icon-btn" id="pdfBtn">
+                <i class="fas fa-file-pdf"></i
+                ><span class="tooltip">Download PDF</span>
+              </button>
+              <button class="icon-btn" id="previewExpandBtn">
+                <i class="fas fa-up-right-and-down-left-from-center"></i
+                ><span class="tooltip">Expand</span>
+              </button>
+            </div>
+          </div>
+          <div id="previewContent" class="custom-scroll">
+            <div id="markdownBody" class="markdown-body"></div>
+          </div>
+          <div class="panel-status">
+            <span id="previewCharCount">0 rendered chars</span>
+            <span style="color: #10b981; font-weight: 500"
+              >PDF-ready &middot; LaTeX &#10003;</span
+            >
+          </div>
         </div>
       </div>
     </div>
@@ -540,7 +818,7 @@
       />
       <span>Powered by</span>
       <a href="https://www.lustertech.net" target="_blank"
-        >達暉資訊有限公司 (Luster Tech)</a
+        >達暉資訊有限公司 (Laster Information)</a
       >
       <span>&middot;</span>
       <span>Luster Markdown Studio</span>
@@ -634,19 +912,334 @@
       var mdBody = document.getElementById("markdownBody");
       var editorPanel = document.getElementById("editorPanel");
       var previewPanel = document.getElementById("previewPanel");
-      var mainCont = document.getElementById("mainContainer");
+      var workspace = document.getElementById("workspace");
       var resizer = document.getElementById("resizer");
+      var previewContent = document.getElementById("previewContent");
+      var tocSidebar = document.getElementById("tocSidebar");
+      var tocToggleBtn = document.getElementById("tocToggleBtn");
+      var tocList = document.getElementById("tocList");
+      var tocResizer = document.getElementById("tocResizer");
       var STORAGE_KEY = "luster-md-studio-content";
+      var TOC_STATE_KEY = "luster-md-studio-toc-expanded";
 
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved) inputEl.value = saved;
 
       var mermaidSeq = 0;
+      var tocHeadings = [];
+      var tocPreferenceInitialized = false;
+      var tocLayoutAnchor = null;
+      var tocActiveRaf = null;
+      var _tocNavigating = false;
+      var _tocNavigationTimer = null;
+      var tocDragging = false;
+      var tocDragStartX = 0;
+      var tocDragStartWidth = 0;
+      var tocPreferredWidth = 272;
+      var tocPointerId = null;
+
+      function prefersReducedMotion() {
+        return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      }
+
+      function getTocWidthLimits() {
+        var maxWidth =
+          window.innerWidth < 1200
+            ? Math.min(520, window.innerWidth * 0.85)
+            : 520;
+        maxWidth = Math.max(180, Math.floor(maxWidth));
+        return { min: Math.min(220, maxWidth), max: maxWidth };
+      }
+
+      function setTocWidth(width) {
+        var limits = getTocWidthLimits();
+        var nextWidth = Math.max(limits.min, Math.min(limits.max, width));
+        tocPreferredWidth = Math.round(nextWidth);
+        tocSidebar.style.setProperty("--toc-width", tocPreferredWidth + "px");
+        tocResizer.setAttribute("aria-valuemin", String(limits.min));
+        tocResizer.setAttribute("aria-valuemax", String(limits.max));
+        tocResizer.setAttribute("aria-valuenow", String(tocPreferredWidth));
+      }
+
+      function captureTocLayoutAnchor() {
+        var activeHeading = tocHeadings.find(function (entry) {
+          return entry.button.classList.contains("active");
+        });
+        if (
+          window.innerWidth >= 1200 &&
+          activeHeading &&
+          previewPanel.style.display !== "none"
+        ) {
+          tocLayoutAnchor = {
+            element: activeHeading.heading,
+            top:
+              activeHeading.heading.getBoundingClientRect().top -
+              previewContent.getBoundingClientRect().top,
+          };
+        } else {
+          tocLayoutAnchor = null;
+        }
+      }
+
+      function beginTocLayoutAdjustment() {
+        captureTocLayoutAnchor();
+        _preventPreviewSync = true;
+        clearTimeout(_preventPreviewSyncTimer);
+      }
+
+      function updateTocResizerAvailability() {
+        var available =
+          tocSidebar.classList.contains("expanded") &&
+          window.innerWidth >= 768 &&
+          !editorExpanded &&
+          tocHeadings.length > 0;
+        tocResizer.setAttribute("aria-hidden", String(!available));
+        tocResizer.tabIndex = available ? 0 : -1;
+      }
+
+      setTocWidth(272);
+
+      function setTocExpanded(expand, options) {
+        options = options || {};
+        if (expand && tocHeadings.length === 0) return;
+        if (dragging || tocDragging) return;
+
+        var currentlyExpanded = tocSidebar.classList.contains("expanded");
+        if (currentlyExpanded === expand) return;
+
+        beginTocLayoutAdjustment();
+
+        tocSidebar.classList.toggle("expanded", expand);
+        tocToggleBtn.setAttribute("aria-expanded", String(expand));
+        tocToggleBtn.setAttribute("aria-label", expand ? "收合目錄" : "展開目錄");
+        tocToggleBtn.title = expand ? "收合目錄" : "展開目錄";
+        tocToggleBtn.querySelector("i").className = expand
+          ? "fas fa-chevron-left"
+          : "fas fa-list-ul";
+        tocList.setAttribute("aria-hidden", String(!expand));
+        updateTocResizerAvailability();
+        Array.from(tocList.querySelectorAll(".toc-item")).forEach(
+          function (item) {
+            item.tabIndex = expand ? 0 : -1;
+          },
+        );
+
+        if (options.persist !== false && window.innerWidth >= 1200) {
+          localStorage.setItem(TOC_STATE_KEY, String(expand));
+        }
+        if (prefersReducedMotion()) {
+          requestAnimationFrame(finishTocLayoutChange);
+        }
+      }
+
+      function slugifyHeading(text) {
+        var slug = text
+          .normalize("NFKC")
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-")
+          .replace(/[^\p{L}\p{N}_-]/gu, "")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "");
+        return slug || "section";
+      }
+
+      function buildTableOfContents() {
+        var headings = Array.from(mdBody.querySelectorAll("h1, h2, h3")).filter(
+          function (heading) {
+            return heading.textContent.trim().length > 0;
+          },
+        );
+        var usedIds = Object.create(null);
+        tocHeadings = [];
+        tocList.innerHTML = "";
+
+        headings.forEach(function (heading) {
+          var baseId = "toc-heading-" + slugifyHeading(heading.textContent || "");
+          var id = baseId;
+          var suffix = 2;
+          while (usedIds[id]) id = baseId + "-" + suffix++;
+          usedIds[id] = true;
+          heading.id = id;
+
+          var level = parseInt(heading.tagName.slice(1), 10);
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "toc-item level-" + level;
+          button.dataset.targetId = id;
+          button.title = heading.textContent.trim();
+          button.tabIndex = tocSidebar.classList.contains("expanded") ? 0 : -1;
+
+          var label = document.createElement("span");
+          label.className = "toc-item-label";
+          label.textContent = heading.textContent.trim();
+          button.appendChild(label);
+          button.addEventListener("click", function () {
+            navigateToHeading(id);
+          });
+          tocList.appendChild(button);
+          tocHeadings.push({ heading: heading, button: button });
+        });
+
+        tocToggleBtn.disabled = tocHeadings.length === 0 || editorExpanded;
+        if (editorExpanded) {
+          tocToggleBtn.title = "離開 Editor 全螢幕後可使用目錄";
+          tocToggleBtn.setAttribute(
+            "aria-label",
+            "離開 Editor 全螢幕後可使用目錄",
+          );
+        } else if (tocHeadings.length === 0) {
+          setTocExpanded(false, { persist: false });
+          tocToggleBtn.title = "文件中沒有標題";
+          tocToggleBtn.setAttribute("aria-label", "文件中沒有標題");
+        } else {
+          var isExpanded = tocSidebar.classList.contains("expanded");
+          tocToggleBtn.title = isExpanded ? "收合目錄" : "展開目錄";
+          tocToggleBtn.setAttribute(
+            "aria-label",
+            isExpanded ? "收合目錄" : "展開目錄",
+          );
+        }
+
+        if (!tocPreferenceInitialized && tocHeadings.length > 0) {
+          var savedPreference = localStorage.getItem(TOC_STATE_KEY);
+          var shouldExpand =
+            tocHeadings.length > 0 &&
+            window.innerWidth >= 1200 &&
+            (savedPreference === "true" ||
+              (savedPreference === null &&
+                tocHeadings.length >= 2));
+          tocPreferenceInitialized = true;
+          setTocExpanded(shouldExpand, { persist: false });
+        }
+
+        updateActiveTocItem();
+      }
+
+      function setActiveTocEntry(entry) {
+        tocHeadings.forEach(function (candidate) {
+          var active = candidate === entry;
+          candidate.button.classList.toggle("active", active);
+          if (active) candidate.button.setAttribute("aria-current", "location");
+          else candidate.button.removeAttribute("aria-current");
+        });
+        if (entry && tocSidebar.classList.contains("expanded")) {
+          entry.button.scrollIntoView({ block: "nearest" });
+        }
+      }
+
+      function updateActiveTocItem() {
+        if (_tocNavigating || tocHeadings.length === 0) return;
+        cancelAnimationFrame(tocActiveRaf);
+        tocActiveRaf = requestAnimationFrame(function () {
+          var previewTop =
+            previewContent.getBoundingClientRect().top +
+            Math.min(160, Math.max(80, previewContent.clientHeight * 0.24));
+          var active = tocHeadings[0];
+          for (var i = 0; i < tocHeadings.length; i++) {
+            if (tocHeadings[i].heading.getBoundingClientRect().top <= previewTop) {
+              active = tocHeadings[i];
+            } else {
+              break;
+            }
+          }
+          setActiveTocEntry(active);
+        });
+      }
+
+      function navigateToHeading(id) {
+        var entry = tocHeadings.find(function (candidate) {
+          return candidate.heading.id === id;
+        });
+        if (!entry) return;
+
+        _tocNavigating = true;
+        _preventPreviewSync = true;
+        _preventEditorSync = true;
+        clearTimeout(_tocNavigationTimer);
+        clearTimeout(_preventPreviewSyncTimer);
+        clearTimeout(_preventEditorSyncTimer);
+        setActiveTocEntry(entry);
+
+        var targetTop = Math.max(0, getElTopInPreview(entry.heading) - 18);
+        var scrollBehavior = prefersReducedMotion() ? "auto" : "smooth";
+        previewContent.scrollTo({ top: targetTop, behavior: scrollBehavior });
+
+        if (syncScrollEnabled && entry.heading.dataset.line) {
+          var editorTop =
+            parseInt(entry.heading.dataset.line, 10) * getEditorLineHeight();
+          inputEl.scrollTo({ top: editorTop, behavior: scrollBehavior });
+        }
+
+        _tocNavigationTimer = setTimeout(
+          function () {
+            _tocNavigating = false;
+            _preventPreviewSync = false;
+            _preventEditorSync = false;
+          },
+          prefersReducedMotion() ? 0 : 420,
+        );
+
+        if (window.innerWidth < 768) {
+          setTimeout(function () {
+            setTocExpanded(false, { persist: false });
+            tocToggleBtn.focus();
+          }, 260);
+        }
+      }
+
+      tocToggleBtn.addEventListener("click", function () {
+        setTocExpanded(!tocSidebar.classList.contains("expanded"));
+      });
+
+      function finishTocLayoutChange() {
+        if (tocLayoutAnchor && tocLayoutAnchor.element.isConnected) {
+          var newTop =
+            tocLayoutAnchor.element.getBoundingClientRect().top -
+            previewContent.getBoundingClientRect().top;
+          previewContent.scrollTop += newTop - tocLayoutAnchor.top;
+        }
+        tocLayoutAnchor = null;
+        updateActiveTocItem();
+        clearTimeout(_preventPreviewSyncTimer);
+        _preventPreviewSyncTimer = setTimeout(function () {
+          _preventPreviewSync = false;
+        }, 80);
+      }
+
+      tocSidebar.addEventListener("transitionend", function (event) {
+        if (event.propertyName !== "width") return;
+        finishTocLayoutChange();
+      });
+
+      var desktopTocMedia = window.matchMedia("(min-width: 1200px)");
+      desktopTocMedia.addEventListener("change", function (event) {
+        if (editorExpanded || tocHeadings.length === 0) return;
+        if (event.matches) {
+          var savedDesktopState = localStorage.getItem(TOC_STATE_KEY);
+          var expandOnDesktop =
+            savedDesktopState === "true" ||
+            (savedDesktopState === null && tocHeadings.length >= 2);
+          setTocExpanded(expandOnDesktop, { persist: false });
+        } else {
+          setTocExpanded(false, { persist: false });
+        }
+      });
+
+      var resizableTocMedia = window.matchMedia("(min-width: 768px)");
+      resizableTocMedia.addEventListener("change", function (event) {
+        if (!event.matches && tocSidebar.classList.contains("expanded")) {
+          setTocExpanded(false, { persist: false });
+        }
+        updateTocResizerAvailability();
+      });
+
       async function updatePreview() {
         var ex = extractMath(inputEl.value || "");
         var html = restoreMath(marked.parse(ex.md), ex.blocks, ex.inlines);
         mdBody.innerHTML = html;
         buildScrollLineMap();
+        buildTableOfContents();
 
         // 渲染 Mermaid 圖表
         var diags = mdBody.querySelectorAll(".mermaid");
@@ -1092,6 +1685,7 @@
       var editorExpanded = false,
         previewExpanded = false,
         savedWidth = null;
+      var tocWasExpandedBeforeEditorFullscreen = false;
       var EXP = "fas fa-up-right-and-down-left-from-center";
       var COL = "fas fa-down-left-and-up-right-to-center";
       function setExpand(which, expand) {
@@ -1100,6 +1694,13 @@
         if (which === "editor") {
           editorExpanded = expand;
           if (expand) {
+            tocWasExpandedBeforeEditorFullscreen =
+              tocSidebar.classList.contains("expanded");
+            if (tocWasExpandedBeforeEditorFullscreen) {
+              setTocExpanded(false, { persist: false });
+            }
+            tocToggleBtn.disabled = true;
+            tocToggleBtn.title = "離開 Editor 全螢幕後可使用目錄";
             savedWidth = editorPanel.style.width || "50%";
             editorPanel.style.width = "100%";
             editorPanel.style.flex = "none";
@@ -1114,6 +1715,16 @@
             previewPanel.style.display = "";
             resizer.style.display = "";
             eI.className = EXP;
+            tocToggleBtn.disabled = tocHeadings.length === 0;
+            if (tocWasExpandedBeforeEditorFullscreen) {
+              setTocExpanded(true, { persist: false });
+            } else {
+              var tocLabel =
+                tocHeadings.length === 0 ? "文件中沒有標題" : "展開目錄";
+              tocToggleBtn.title = tocLabel;
+              tocToggleBtn.setAttribute("aria-label", tocLabel);
+            }
+            tocWasExpandedBeforeEditorFullscreen = false;
           }
         } else {
           previewExpanded = expand;
@@ -1151,11 +1762,88 @@
       var dragging = false,
         dragStartX = 0,
         dragStartW = 0;
+
+      function finishTocResize() {
+        if (!tocDragging) return;
+        tocDragging = false;
+        if (
+          tocPointerId !== null &&
+          tocResizer.hasPointerCapture(tocPointerId)
+        ) {
+          tocResizer.releasePointerCapture(tocPointerId);
+        }
+        tocPointerId = null;
+        tocSidebar.classList.remove("resizing");
+        tocResizer.classList.remove("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        setTocWidth(tocPreferredWidth);
+        finishTocLayoutChange();
+      }
+
+      tocResizer.addEventListener("pointerdown", function (e) {
+        if (
+          dragging ||
+          editorExpanded ||
+          window.innerWidth < 768 ||
+          !tocSidebar.classList.contains("expanded")
+        )
+          return;
+        tocDragging = true;
+        tocPointerId = e.pointerId;
+        tocResizer.setPointerCapture(e.pointerId);
+        tocDragStartX = e.clientX;
+        tocDragStartWidth = tocSidebar.getBoundingClientRect().width;
+        beginTocLayoutAdjustment();
+        _preventPreviewSync = true;
+        clearTimeout(_preventPreviewSyncTimer);
+        tocSidebar.classList.add("resizing");
+        tocResizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+        e.preventDefault();
+      });
+
+      tocResizer.addEventListener("pointermove", function (e) {
+        if (!tocDragging || e.pointerId !== tocPointerId) return;
+        setTocWidth(tocDragStartWidth + (e.clientX - tocDragStartX));
+      });
+
+      tocResizer.addEventListener("pointerup", finishTocResize);
+      tocResizer.addEventListener("pointercancel", finishTocResize);
+
+      tocResizer.addEventListener("dblclick", function (e) {
+        if (!tocSidebar.classList.contains("expanded")) return;
+        beginTocLayoutAdjustment();
+        setTocWidth(272);
+        if (prefersReducedMotion()) {
+          requestAnimationFrame(finishTocLayoutChange);
+        }
+        e.preventDefault();
+      });
+
+      tocResizer.addEventListener("keydown", function (e) {
+        var delta = e.shiftKey ? 40 : 16;
+        var nextWidth = null;
+        if (e.key === "ArrowLeft") nextWidth = tocPreferredWidth - delta;
+        if (e.key === "ArrowRight") nextWidth = tocPreferredWidth + delta;
+        if (e.key === "Home") nextWidth = getTocWidthLimits().min;
+        if (e.key === "End") nextWidth = getTocWidthLimits().max;
+        if (nextWidth === null) return;
+        beginTocLayoutAdjustment();
+        setTocWidth(nextWidth);
+        if (prefersReducedMotion()) {
+          requestAnimationFrame(finishTocLayoutChange);
+        }
+        e.preventDefault();
+      });
+
       resizer.addEventListener("dblclick", function () {
         editorPanel.style.width = "50%";
         editorPanel.style.flex = "";
       });
       resizer.addEventListener("mousedown", function (e) {
+        if (tocDragging) return;
         dragging = true;
         dragStartX = e.clientX;
         dragStartW = editorPanel.getBoundingClientRect().width;
@@ -1165,18 +1853,26 @@
         e.preventDefault();
       });
       window.addEventListener("mousemove", function (e) {
+        if (tocDragging) {
+          setTocWidth(tocDragStartWidth + (e.clientX - tocDragStartX));
+          return;
+        }
         if (!dragging) return;
-        var totalW = mainCont.getBoundingClientRect().width;
+        var totalW = workspace.getBoundingClientRect().width;
         var w = dragStartW + (e.clientX - dragStartX);
         w = Math.max(180, Math.min(totalW - resizer.offsetWidth - 180, w));
         editorPanel.style.width = w + "px";
         editorPanel.style.flex = "none";
       });
       window.addEventListener("mouseup", function () {
+        if (tocDragging) {
+          finishTocResize();
+          return;
+        }
         if (!dragging) return;
         dragging = false;
         // Convert to % so browser resize keeps the ratio
-        var totalW = mainCont.getBoundingClientRect().width;
+        var totalW = workspace.getBoundingClientRect().width;
         var curW = editorPanel.getBoundingClientRect().width;
         editorPanel.style.width = ((curW / totalW) * 100).toFixed(2) + "%";
         editorPanel.style.flex = "";
@@ -1184,11 +1880,11 @@
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
       });
+      window.addEventListener("blur", finishTocResize);
 
       updateStatus();
 
       // ── Synchronized Scroll ─────────────────────────────────────────────────
-      var previewContent = document.getElementById("previewContent");
       var syncScrollEnabled = true;
       var _preventPreviewSync = false;
       var _preventEditorSync = false;
@@ -1368,7 +2064,7 @@
 
       // ── Scroll event listeners ───────────────────────────────────────────────
       inputEl.addEventListener("scroll", function () {
-        if (!syncScrollEnabled || _preventEditorSync) return;
+        if (!syncScrollEnabled || _preventEditorSync || _tocNavigating) return;
         _preventPreviewSync = true;
         clearTimeout(_preventPreviewSyncTimer);
         scrollPreviewToLine(getEditorTopLine());
@@ -1378,7 +2074,8 @@
       });
 
       previewContent.addEventListener("scroll", function () {
-        if (!syncScrollEnabled || _preventPreviewSync) return;
+        updateActiveTocItem();
+        if (!syncScrollEnabled || _preventPreviewSync || _tocNavigating) return;
         _preventEditorSync = true;
         clearTimeout(_preventEditorSyncTimer);
         scrollEditorFromPreview();
