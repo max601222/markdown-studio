@@ -4,6 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Luster Markdown Studio</title>
+    <script>
+      (function () {
+        var preference = "system";
+        try {
+          var savedPreference = localStorage.getItem(
+            "luster-md-studio-theme",
+          );
+          if (savedPreference === "light" || savedPreference === "dark") {
+            preference = savedPreference;
+          }
+        } catch (error) {}
+        var resolved =
+          preference === "system"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : preference;
+        document.documentElement.dataset.theme = resolved;
+        document.documentElement.style.colorScheme = resolved;
+      })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
     <script src="./markdown-normalizer.js?v=20260718-2"></script>
     <link
@@ -19,9 +40,20 @@
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js"></script>
     <link
+      id="markdownThemeStylesheet"
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-light.css"
     />
+    <script>
+      var initialMarkdownTheme =
+        document.documentElement.dataset.theme === "dark"
+          ? "dark-high-contrast"
+          : "light";
+      document.getElementById("markdownThemeStylesheet").href =
+        "https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-" +
+        initialMarkdownTheme +
+        ".css";
+    </script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -37,6 +69,22 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+      }
+      :root {
+        --panel-border-color: #e2e8f0;
+        --muted-icon-color: #94a3b8;
+      }
+      html[data-theme="dark"] {
+        --dark-page: #000;
+        --dark-surface: #000;
+        --dark-elevated: #171717;
+        --dark-hover: #242424;
+        --dark-border: #2a2a2a;
+        --dark-text: #ececec;
+        --dark-muted: #b4b4b4;
+        --dark-subtle: #8e8e8e;
+        --panel-border-color: var(--dark-border);
+        --muted-icon-color: var(--dark-subtle);
       }
       body {
         font-family: "Inter", sans-serif;
@@ -79,6 +127,74 @@
         font-size: 14px;
         font-weight: 600;
         color: #374151;
+      }
+      .navbar-spacer {
+        flex: 1;
+      }
+      .theme-picker {
+        position: relative;
+        flex-shrink: 0;
+      }
+      #themeToggleBtn {
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+      }
+      #themeToggleBtn[aria-expanded="true"] {
+        background: #e2e8f0;
+        color: #1e293b;
+      }
+      .theme-menu {
+        position: absolute;
+        top: calc(100% + 7px);
+        right: 0;
+        z-index: 10001;
+        width: 156px;
+        padding: 5px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16);
+      }
+      .theme-menu[hidden] {
+        display: none;
+      }
+      .theme-option {
+        width: 100%;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: #475569;
+        font: inherit;
+        font-size: 12px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .theme-option i:first-child {
+        width: 14px;
+        text-align: center;
+      }
+      .theme-option:hover,
+      .theme-option:focus-visible {
+        background: #f1f5f9;
+        color: #0f172a;
+        outline: none;
+      }
+      .theme-option .theme-check {
+        margin-left: auto;
+        color: #10b981;
+        opacity: 0;
+      }
+      .theme-option[aria-checked="true"] {
+        color: #047857;
+        font-weight: 600;
+      }
+      .theme-option[aria-checked="true"] .theme-check {
+        opacity: 1;
       }
       #pasteToast {
         position: fixed;
@@ -523,12 +639,17 @@
         background-color: #282c34;
       }
       .markdown-body code:not(.hljs) {
-        background: #f6f8fa;
-        color: #d63384;
         padding: 2px 6px;
         border-radius: 4px;
         font-size: 0.875em;
-        border: 1px solid #e2e8f0;
+      }
+      html[data-theme="light"] .markdown-body :not(pre) > code {
+        color: #1f2328;
+        background-color: #e8e8e8;
+      }
+      html[data-theme="dark"] .markdown-body :not(pre) > code {
+        color: #f0f6fc;
+        background-color: #212830;
       }
       .markdown-body .math-block {
         overflow-x: auto;
@@ -576,12 +697,6 @@
         overflow-wrap: break-word !important;
         padding: 8px 12px !important;
       }
-      .markdown-body table thead tr {
-        background: #f6f8fa !important;
-      }
-      .markdown-body table tbody tr:hover {
-        background: #f8fafc !important;
-      }
       .markdown-body table-wrapper {
         overflow-x: auto;
         width: 100%;
@@ -611,6 +726,126 @@
       #appFooter a:hover {
         color: #3b82f6;
         text-decoration: underline;
+      }
+      html[data-theme="dark"] body {
+        background: var(--dark-page);
+      }
+      html[data-theme="dark"] .custom-scroll::-webkit-scrollbar-thumb {
+        background: #404040;
+      }
+      html[data-theme="dark"] #navbar,
+      html[data-theme="dark"] .panel-wrap,
+      html[data-theme="dark"] #input,
+      html[data-theme="dark"] #previewContent {
+        background: var(--dark-surface);
+      }
+      html[data-theme="dark"] #navbar {
+        border-color: var(--dark-border);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+      }
+      html[data-theme="dark"] #navbar h1,
+      html[data-theme="dark"] #input {
+        color: var(--dark-text);
+      }
+      html[data-theme="dark"] #themeToggleBtn,
+      html[data-theme="dark"] .theme-menu,
+      html[data-theme="dark"] .panel-header,
+      html[data-theme="dark"] .panel-status,
+      html[data-theme="dark"] #tocSidebar,
+      html[data-theme="dark"] .toc-header,
+      html[data-theme="dark"] #appFooter {
+        background: var(--dark-elevated);
+        border-color: var(--dark-border);
+      }
+      html[data-theme="dark"] .theme-menu {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      }
+      html[data-theme="dark"] #pasteToast,
+      html[data-theme="dark"] .icon-btn .tooltip {
+        color: var(--dark-text);
+        background: var(--dark-elevated);
+      }
+      html[data-theme="dark"] #themeToggleBtn[aria-expanded="true"],
+      html[data-theme="dark"] .theme-option:hover,
+      html[data-theme="dark"] .theme-option:focus-visible,
+      html[data-theme="dark"] .icon-btn:hover,
+      html[data-theme="dark"] .toc-item:hover {
+        background: var(--dark-hover);
+        color: #fff;
+      }
+      html[data-theme="dark"] .theme-option,
+      html[data-theme="dark"] .panel-title,
+      html[data-theme="dark"] .toc-title,
+      html[data-theme="dark"] .icon-btn,
+      html[data-theme="dark"] .toc-item,
+      html[data-theme="dark"] #appFooter a {
+        color: var(--dark-muted);
+      }
+      html[data-theme="dark"] .theme-option[aria-checked="true"],
+      html[data-theme="dark"] .toc-item.active,
+      html[data-theme="dark"] #appFooter a:hover {
+        color: #6ee7b7;
+      }
+      html[data-theme="dark"] #editorPanel,
+      html[data-theme="dark"] .panel-header,
+      html[data-theme="dark"] .panel-status,
+      html[data-theme="dark"] .toc-header,
+      html[data-theme="dark"] #tocSidebar,
+      html[data-theme="dark"] #appFooter {
+        border-color: var(--dark-border);
+      }
+      html[data-theme="dark"] #resizer {
+        background: var(--dark-border);
+      }
+      html[data-theme="dark"] #resizerIcon {
+        color: var(--dark-subtle);
+      }
+      html[data-theme="dark"] #resizer:hover,
+      html[data-theme="dark"] #resizer.dragging,
+      html[data-theme="dark"] #tocResizer:hover,
+      html[data-theme="dark"] #tocResizer.dragging,
+      html[data-theme="dark"] #tocResizer:focus-visible {
+        background: #10a37f;
+      }
+      html[data-theme="dark"] #input::placeholder {
+        color: #737373;
+      }
+      html[data-theme="dark"] .toc-item.level-1 {
+        color: var(--dark-text);
+      }
+      html[data-theme="dark"] .toc-item.level-3,
+      html[data-theme="dark"] .panel-status,
+      html[data-theme="dark"] #appFooter {
+        color: var(--dark-subtle);
+      }
+      html[data-theme="dark"] .toc-item.active {
+        background: #183d32;
+      }
+      html[data-theme="dark"] #tocToggleBtn:disabled {
+        color: #686868;
+      }
+      html[data-theme="dark"] #tocSidebar.expanded {
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.32);
+      }
+      html[data-theme="dark"] .markdown-body {
+        background: var(--dark-surface);
+      }
+      html[data-theme="dark"] .markdown-body hr {
+        border-top-color: #3d444d !important;
+      }
+      html[data-theme="dark"] .markdown-body pre > code.hljs {
+        background-color: #1f1f1f;
+      }
+      html[data-theme="dark"] .markdown-body .mermaid-wrap {
+        background: var(--dark-elevated) !important;
+      }
+      html[data-theme="dark"] .markdown-body .mermaid-wrap {
+        border-color: var(--dark-border);
+      }
+      html[data-theme="dark"] .markdown-body .abc-wrap {
+        color: #24292f;
+        background: #fff;
+        border-color: #4a4a4a;
       }
       @media print {
         #navbar,
@@ -644,13 +879,34 @@
           height: auto !important;
         }
         #previewContent {
+          background: #fff !important;
           overflow: visible !important;
           height: auto !important;
           max-height: none !important;
           padding: 15mm 20mm !important;
         }
         .markdown-body {
+          color: #24292f !important;
+          background: #fff !important;
           max-width: 100% !important;
+        }
+        html[data-theme="dark"] .markdown-body table tr,
+        html[data-theme="dark"] .markdown-body table thead tr,
+        html[data-theme="dark"] .markdown-body table tbody tr:hover,
+        html[data-theme="dark"] .markdown-body .mermaid-wrap,
+        html[data-theme="dark"] .markdown-body .abc-wrap {
+          color: #24292f !important;
+          background: #fff !important;
+          border-color: #d0d7de !important;
+        }
+        html[data-theme="dark"] .markdown-body blockquote {
+          color: #57606a !important;
+          border-left-color: #d0d7de !important;
+        }
+        .markdown-body :not(pre) > code {
+          color: #d63384 !important;
+          background: #f6f8fa !important;
+          border-color: #d0d7de !important;
         }
         .markdown-body pre > code.hljs {
           background: #282c34 !important;
@@ -699,6 +955,62 @@
     <div id="navbar">
       <div class="logo"><i class="fas fa-wand-magic-sparkles"></i></div>
       <h1>Luster Markdown Studio</h1>
+      <div class="navbar-spacer"></div>
+      <div class="theme-picker">
+        <button
+          class="icon-btn"
+          id="themeToggleBtn"
+          type="button"
+          aria-label="外觀：跟隨系統"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="themeMenu"
+          title="外觀：跟隨系統"
+        >
+          <i class="fas fa-desktop" aria-hidden="true"></i>
+        </button>
+        <div
+          class="theme-menu"
+          id="themeMenu"
+          role="radiogroup"
+          aria-label="外觀模式"
+          hidden
+        >
+          <button
+            class="theme-option"
+            type="button"
+            role="radio"
+            aria-checked="true"
+            data-theme-preference="system"
+          >
+            <i class="fas fa-desktop" aria-hidden="true"></i>
+            <span>跟隨系統</span>
+            <i class="fas fa-check theme-check" aria-hidden="true"></i>
+          </button>
+          <button
+            class="theme-option"
+            type="button"
+            role="radio"
+            aria-checked="false"
+            data-theme-preference="light"
+          >
+            <i class="fas fa-sun" aria-hidden="true"></i>
+            <span>淺色模式</span>
+            <i class="fas fa-check theme-check" aria-hidden="true"></i>
+          </button>
+          <button
+            class="theme-option"
+            type="button"
+            role="radio"
+            aria-checked="false"
+            data-theme-preference="dark"
+          >
+            <i class="fas fa-moon" aria-hidden="true"></i>
+            <span>深色模式</span>
+            <i class="fas fa-check theme-check" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
     </div>
     <div id="mainContainer">
       <aside id="tocSidebar" aria-label="文件目錄">
@@ -836,19 +1148,145 @@
       <span>Luster Markdown Studio</span>
     </div>
     <script>
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: "default",
-        themeVariables: {
-          fontSize: "16px",
-          fontFamily: "Arial, sans-serif",
-        },
-        flowchart: {
-          useMaxWidth: false,
-          htmlLabels: true,
-          curve: "basis",
-        },
+      var THEME_STORAGE_KEY = "luster-md-studio-theme";
+      var systemThemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+      var themeToggleBtn = document.getElementById("themeToggleBtn");
+      var themeMenu = document.getElementById("themeMenu");
+      var markdownThemeStylesheet = document.getElementById(
+        "markdownThemeStylesheet",
+      );
+      var themeOptions = Array.from(
+        themeMenu.querySelectorAll("[data-theme-preference]"),
+      );
+      var themePreference = "system";
+
+      try {
+        var savedThemePreference = localStorage.getItem(THEME_STORAGE_KEY);
+        if (
+          savedThemePreference === "light" ||
+          savedThemePreference === "dark"
+        ) {
+          themePreference = savedThemePreference;
+        }
+      } catch (error) {}
+
+      function getResolvedTheme() {
+        if (themePreference === "system") {
+          return systemThemeMedia.matches ? "dark" : "light";
+        }
+        return themePreference;
+      }
+
+      function initializeMermaidTheme() {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: getResolvedTheme() === "dark" ? "dark" : "default",
+          themeVariables: {
+            fontSize: "16px",
+            fontFamily: "Arial, sans-serif",
+          },
+          flowchart: {
+            useMaxWidth: false,
+            htmlLabels: true,
+            curve: "basis",
+          },
+        });
+      }
+
+      function updateThemeControl() {
+        var metadata = {
+          system: { label: "跟隨系統", icon: "fas fa-desktop" },
+          light: { label: "淺色模式", icon: "fas fa-sun" },
+          dark: { label: "深色模式", icon: "fas fa-moon" },
+        };
+        var current = metadata[themePreference];
+        themeToggleBtn.querySelector("i").className = current.icon;
+        themeToggleBtn.setAttribute("aria-label", "外觀：" + current.label);
+        themeToggleBtn.title = "外觀：" + current.label;
+        themeOptions.forEach(function (option) {
+          option.setAttribute(
+            "aria-checked",
+            String(option.dataset.themePreference === themePreference),
+          );
+        });
+      }
+
+      function applyTheme(options) {
+        options = options || {};
+        var resolvedTheme = getResolvedTheme();
+        document.documentElement.dataset.theme = resolvedTheme;
+        document.documentElement.style.colorScheme = resolvedTheme;
+        var markdownThemeName =
+          resolvedTheme === "dark" ? "dark-high-contrast" : "light";
+        var markdownThemeFilename =
+          "github-markdown-" + markdownThemeName + ".css";
+        if (!markdownThemeStylesheet.href.endsWith(markdownThemeFilename)) {
+          markdownThemeStylesheet.href =
+            "https://cdn.jsdelivr.net/npm/github-markdown-css@5/" +
+            markdownThemeFilename;
+        }
+        updateThemeControl();
+        initializeMermaidTheme();
+        if (options.rerender && typeof updatePreview === "function") {
+          updatePreview();
+        }
+      }
+
+      function setThemePreference(preference) {
+        themePreference = preference;
+        try {
+          if (preference === "system") {
+            localStorage.removeItem(THEME_STORAGE_KEY);
+          } else {
+            localStorage.setItem(THEME_STORAGE_KEY, preference);
+          }
+        } catch (error) {}
+        applyTheme({ rerender: true });
+      }
+
+      function setThemeMenuOpen(open) {
+        themeMenu.hidden = !open;
+        themeToggleBtn.setAttribute("aria-expanded", String(open));
+      }
+
+      themeToggleBtn.addEventListener("click", function () {
+        var willOpen = themeMenu.hidden;
+        setThemeMenuOpen(willOpen);
+        if (willOpen) {
+          var selected = themeMenu.querySelector('[aria-checked="true"]');
+          if (selected) selected.focus();
+        }
       });
+
+      themeOptions.forEach(function (option) {
+        option.addEventListener("click", function () {
+          setThemePreference(option.dataset.themePreference);
+          setThemeMenuOpen(false);
+          themeToggleBtn.focus();
+        });
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!event.target.closest(".theme-picker")) setThemeMenuOpen(false);
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !themeMenu.hidden) {
+          setThemeMenuOpen(false);
+          themeToggleBtn.focus();
+        }
+      });
+
+      function handleSystemThemeChange() {
+        if (themePreference === "system") applyTheme({ rerender: true });
+      }
+      if (systemThemeMedia.addEventListener) {
+        systemThemeMedia.addEventListener("change", handleSystemThemeChange);
+      } else {
+        systemThemeMedia.addListener(handleSystemThemeChange);
+      }
+
+      applyTheme();
 
       marked.use({
         gfm: true,
@@ -1934,7 +2372,8 @@
           } else {
             editorPanel.style.width = savedWidth || "50%";
             editorPanel.style.flex = "";
-            editorPanel.style.borderRight = "1px solid #e2e8f0";
+            editorPanel.style.borderRight =
+              "1px solid var(--panel-border-color)";
             previewPanel.style.display = "";
             resizer.style.display = "";
             eI.className = EXP;
@@ -2319,7 +2758,7 @@
             showToast("同步捲動 已開啟");
           } else {
             icon.className = "fas fa-link-slash";
-            icon.style.color = "#94a3b8";
+            icon.style.color = "var(--muted-icon-color)";
             showToast("同步捲動 已關閉");
           }
         });
