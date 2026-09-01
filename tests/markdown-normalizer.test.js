@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   normalizeNestedFenceEnvelope,
+  formatMarkdownDocument,
 } = require("../markdown-normalizer.js");
 
 test("expands a whole-document fence around language-tagged inner fences", () => {
@@ -214,4 +215,275 @@ test("preserves CRLF and expands beyond the widest inner fence", () => {
   assert.ok(normalized.startsWith("`````\r\n"));
   assert.ok(normalized.endsWith("\r\n`````"));
   assert.equal((normalized.match(/\r\n/g) || []).length, 7);
+});
+
+test("format preserves nested list indentation and ordered list numbers", () => {
+  const markdown = [
+    "1. 先檢查既有紀錄。",
+    "2. 若沒有任何過期紀錄：",
+    "   - 保留原有內容不變。",
+    "   - 直接追加至原檔案末端。",
+    "3. 重新讀取後必須確認：",
+    "   - 每個非空行均可解析。",
+    "   - 本次新增紀錄至少包含：",
+    "     - `news_id`",
+    "     - `reported_date`",
+  ].join("\n");
+
+  assert.equal(formatMarkdownDocument(markdown), markdown);
+});
+
+test("format keeps a paragraph outside the preceding table", () => {
+  const markdown = [
+    "這次成功了！以下是找到的頁面列表：",
+    "",
+    "| 頁面標題 | 最後更新 |",
+    "| --- | --- |",
+    "| 公司簡介 | 2026/03/12 |",
+    "",
+    "看起來你有在維護一份定期更新的筆記。",
+  ].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    [
+      "這次成功了！以下是找到的頁面列表：",
+      "| 頁面標題 | 最後更新 |",
+      "| --- | --- |",
+      "| 公司簡介 | 2026/03/12 |",
+      "",
+      "看起來你有在維護一份定期更新的筆記。",
+    ].join("\n"),
+  );
+});
+
+test("format removes all ordinary blank lines between paragraphs", () => {
+  const markdown = ["第一段。", "", "", "第二段。", "", "第三段。"].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    ["第一段。", "第二段。", "第三段。"].join("\n"),
+  );
+});
+
+test("format does not insert a blank line before a table", () => {
+  const markdown = [
+    "以下是頁面列表：",
+    "",
+    "| 頁面標題 | 最後更新 |",
+    "| --- | --- |",
+    "| 公司簡介 | 2026/03/12 |",
+  ].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    [
+      "以下是頁面列表：",
+      "| 頁面標題 | 最後更新 |",
+      "| --- | --- |",
+      "| 公司簡介 | 2026/03/12 |",
+    ].join("\n"),
+  );
+});
+
+test("format inserts a missing blank line after a GFM table", () => {
+  const markdown = [
+    "| 頁面標題 | 最後更新 |",
+    "| --- | --- |",
+    "| 公司簡介 | 2026/03/12 |",
+    "看起來你有在維護一份定期更新的筆記。",
+  ].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    [
+      "| 頁面標題 | 最後更新 |",
+      "| --- | --- |",
+      "| 公司簡介 | 2026/03/12 |",
+      "",
+      "看起來你有在維護一份定期更新的筆記。",
+    ].join("\n"),
+  );
+});
+
+test("format does not alter content inside fenced code blocks", () => {
+  const markdown = [
+    "```md",
+    "| not | a table |   ",
+    "| --- | --- |",
+    "   - indentation and trailing spaces stay exact   ",
+    "```",
+  ].join("\n");
+
+  assert.equal(formatMarkdownDocument(markdown), markdown);
+});
+
+test("format is idempotent", () => {
+  const markdown = [
+    "# 標題",
+    "",
+    "1. 項目",
+    "   - 子項目",
+    "",
+    "| 欄位 | 值 |",
+    "| --- | --- |",
+    "| A | B |",
+    "後續段落",
+  ].join("\n");
+  const formatted = formatMarkdownDocument(markdown);
+
+  assert.equal(formatMarkdownDocument(formatted), formatted);
+});
+
+test("format preserves the boundary after unordered and ordered lists", () => {
+  const markdown = [
+    "視角固定為供給側：",
+    "",
+    "- 達暉提供人力與工程能力",
+    "- 客戶決定內部技術選型與採購",
+    "",
+    "必含：",
+    "",
+    "1. 機會",
+    "2. 風險",
+    "",
+    "不得把後續段落寫進清單。",
+  ].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    [
+      "視角固定為供給側：",
+      "- 達暉提供人力與工程能力",
+      "- 客戶決定內部技術選型與採購",
+      "",
+      "必含：",
+      "1. 機會",
+      "2. 風險",
+      "",
+      "不得把後續段落寫進清單。",
+    ].join("\n"),
+  );
+});
+
+test("format removes unnecessary blank lines between list items", () => {
+  const markdown = ["- A", "", "+ B", "", "1. C", "", "2. D"].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    ["- A", "+ B", "1. C", "2. D"].join("\n"),
+  );
+});
+
+test("format preserves a second paragraph inside a list item", () => {
+  const markdown = ["- 第一段", "", "  第二段", "- 下一項"].join("\n");
+
+  assert.equal(formatMarkdownDocument(markdown), markdown);
+});
+
+test("format preserves the boundary after a block quote", () => {
+  const markdown = ["> 引言", "", "後續段落。"].join("\n");
+
+  assert.equal(formatMarkdownDocument(markdown), markdown);
+});
+
+test("format preserves a required blank before indented code", () => {
+  const markdown = ["前段。", "", "    const value = 1;", "後段。"].join("\n");
+
+  assert.equal(formatMarkdownDocument(markdown), markdown);
+});
+
+test("format preserves blank lines inside indented code", () => {
+  const markdown = [
+    "    const first = 1;",
+    "",
+    "",
+    "    const second = 2;",
+    "後段。",
+  ].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    ["    const first = 1;", "", "    const second = 2;", "後段。"].join("\n"),
+  );
+});
+
+test("format removes an unnecessary blank between a quote and a list", () => {
+  const markdown = ["> 引言", "", "- 項目"].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    ["> 引言", "- 項目"].join("\n"),
+  );
+});
+
+test("format distinguishes Setext headings from thematic breaks", () => {
+  const heading = ["標題", "---", "後段。"].join("\n");
+  const thematicBreak = ["前段。", "", "---", "", "後段。"].join("\n");
+
+  assert.equal(formatMarkdownDocument(heading), heading);
+  assert.equal(
+    formatMarkdownDocument(thematicBreak),
+    ["前段。", "", "---", "後段。"].join("\n"),
+  );
+});
+
+test("format preserves boundaries for link references and non-one ordered lists", () => {
+  const reference = ["前段。", "", "[id]: /url"].join("\n");
+  const ordered = ["前段。", "", "2. 第二項"].join("\n");
+
+  assert.equal(formatMarkdownDocument(reference), reference);
+  assert.equal(formatMarkdownDocument(ordered), ordered);
+});
+
+test("format preserves the terminating blank after an HTML block", () => {
+  const markdown = ["<div>", "raw content", "</div>", "", "後續段落。"].join(
+    "\n",
+  );
+
+  assert.equal(formatMarkdownDocument(markdown), markdown);
+});
+
+test("format preserves hard line breaks and indented fenced content", () => {
+  const hardBreak = ["第一行   ", "第二行"].join("\n");
+  const nestedFence = [
+    "- 程式碼",
+    "    ```md",
+    "    第一行   ",
+    "",
+    "    第二行",
+    "    ```",
+  ].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(hardBreak),
+    ["第一行  ", "第二行"].join("\n"),
+  );
+  assert.equal(formatMarkdownDocument(nestedFence), nestedFence);
+});
+
+test("format removes unnecessary spacing around explicit blocks", () => {
+  const markdown = [
+    "前段。",
+    "",
+    "# 標題",
+    "",
+    "| 欄位 | 值 |",
+    "| --- | --- |",
+    "| A | B |",
+    "",
+    "> 引言",
+  ].join("\n");
+
+  assert.equal(
+    formatMarkdownDocument(markdown),
+    [
+      "前段。",
+      "# 標題",
+      "| 欄位 | 值 |",
+      "| --- | --- |",
+      "| A | B |",
+      "> 引言",
+    ].join("\n"),
+  );
 });

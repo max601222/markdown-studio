@@ -8,9 +8,7 @@
       (function () {
         var preference = "system";
         try {
-          var savedPreference = localStorage.getItem(
-            "luster-md-studio-theme",
-          );
+          var savedPreference = localStorage.getItem("luster-md-studio-theme");
           if (savedPreference === "light" || savedPreference === "dark") {
             preference = savedPreference;
           }
@@ -26,7 +24,7 @@
       })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
-    <script src="./markdown-normalizer.js?v=20260718-2"></script>
+    <script src="./markdown-normalizer.js?v=20260901-2"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"
@@ -1052,50 +1050,50 @@
       </aside>
       <div id="workspace">
         <div id="editorPanel" class="panel-wrap">
-        <div class="panel-header">
-          <span class="panel-title">Editor</span>
-          <div class="panel-actions">
-            <button class="icon-btn" id="openFileBtn">
-              <i class="far fa-folder-open"></i
-              ><span class="tooltip">開啟文件（MD/TXT/HTML/DOCX/PDF）</span>
-            </button>
-            <button class="icon-btn" id="formatBtn">
-              <i class="fas fa-wand-magic-sparkles"></i
-              ><span class="tooltip">Format</span>
-            </button>
-            <button class="icon-btn" id="editorCopyBtn">
-              <i class="far fa-copy"></i><span class="tooltip">Copy</span>
-            </button>
-            <button class="icon-btn" id="editorDownloadBtn">
-              <i class="fas fa-file-arrow-down"></i
-              ><span class="tooltip">Download .md</span>
-            </button>
-            <button class="icon-btn" id="syncScrollBtn">
-              <i class="fas fa-link" style="color: #10b981"></i
-              ><span class="tooltip">同步捲動</span>
-            </button>
-            <button class="icon-btn" id="editorExpandBtn">
-              <i class="fas fa-up-right-and-down-left-from-center"></i
-              ><span class="tooltip">Expand</span>
-            </button>
+          <div class="panel-header">
+            <span class="panel-title">Editor</span>
+            <div class="panel-actions">
+              <button class="icon-btn" id="openFileBtn">
+                <i class="far fa-folder-open"></i
+                ><span class="tooltip">開啟文件（MD/TXT/HTML/DOCX/PDF）</span>
+              </button>
+              <button class="icon-btn" id="formatBtn">
+                <i class="fas fa-wand-magic-sparkles"></i
+                ><span class="tooltip">Format</span>
+              </button>
+              <button class="icon-btn" id="editorCopyBtn">
+                <i class="far fa-copy"></i><span class="tooltip">Copy</span>
+              </button>
+              <button class="icon-btn" id="editorDownloadBtn">
+                <i class="fas fa-file-arrow-down"></i
+                ><span class="tooltip">Download .md</span>
+              </button>
+              <button class="icon-btn" id="syncScrollBtn">
+                <i class="fas fa-link" style="color: #10b981"></i
+                ><span class="tooltip">同步捲動</span>
+              </button>
+              <button class="icon-btn" id="editorExpandBtn">
+                <i class="fas fa-up-right-and-down-left-from-center"></i
+                ><span class="tooltip">Expand</span>
+              </button>
+            </div>
           </div>
-        </div>
-        <textarea
-          id="input"
-          spellcheck="false"
-          class="custom-scroll"
-          placeholder="可直接貼上從網頁複製的內容，系統會自動轉換為 Markdown。&#10;You can paste content copied from a webpage, and it will be automatically converted to Markdown."
-        ></textarea>
-        <input
-          id="fileInput"
-          type="file"
-          hidden
-          accept=".md,.markdown,.mdown,.mkd,.txt,.text,.html,.htm,.xhtml,.docx,.pdf,.csv,.tsv,.json,.xml,.yaml,.yml,.log,text/plain,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        />
-        <div class="panel-status">
-          <span id="editorCharCount">0 chars</span>
-          <span id="editorLineCount">0 lines</span>
-        </div>
+          <textarea
+            id="input"
+            spellcheck="false"
+            class="custom-scroll"
+            placeholder="可直接貼上從網頁複製的內容，系統會自動轉換為 Markdown。&#10;You can paste content copied from a webpage, and it will be automatically converted to Markdown."
+          ></textarea>
+          <input
+            id="fileInput"
+            type="file"
+            hidden
+            accept=".md,.markdown,.mdown,.mkd,.txt,.text,.html,.htm,.xhtml,.docx,.pdf,.csv,.tsv,.json,.xml,.yaml,.yml,.log,text/plain,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          />
+          <div class="panel-status">
+            <span id="editorCharCount">0 chars</span>
+            <span id="editorLineCount">0 lines</span>
+          </div>
         </div>
         <div id="resizer">
           <div id="resizerIcon">
@@ -1111,7 +1109,8 @@
                 <i class="far fa-copy"></i><span class="tooltip">Copy</span>
               </button>
               <button class="icon-btn" id="copyHtmlBtn">
-                <i class="fas fa-code"></i><span class="tooltip">Copy HTML</span>
+                <i class="fas fa-code"></i
+                ><span class="tooltip">Copy HTML</span>
               </button>
               <button class="icon-btn" id="pdfBtn">
                 <i class="fas fa-file-pdf"></i
@@ -1461,7 +1460,10 @@
 
         tocSidebar.classList.toggle("expanded", expand);
         tocToggleBtn.setAttribute("aria-expanded", String(expand));
-        tocToggleBtn.setAttribute("aria-label", expand ? "收合目錄" : "展開目錄");
+        tocToggleBtn.setAttribute(
+          "aria-label",
+          expand ? "收合目錄" : "展開目錄",
+        );
         tocToggleBtn.title = expand ? "收合目錄" : "展開目錄";
         tocToggleBtn.querySelector("i").className = expand
           ? "fas fa-chevron-left"
@@ -1505,7 +1507,8 @@
         tocList.innerHTML = "";
 
         headings.forEach(function (heading) {
-          var baseId = "toc-heading-" + slugifyHeading(heading.textContent || "");
+          var baseId =
+            "toc-heading-" + slugifyHeading(heading.textContent || "");
           var id = baseId;
           var suffix = 2;
           while (usedIds[id]) id = baseId + "-" + suffix++;
@@ -1557,8 +1560,7 @@
             tocHeadings.length > 0 &&
             window.innerWidth >= 1200 &&
             (savedPreference === "true" ||
-              (savedPreference === null &&
-                tocHeadings.length >= 2));
+              (savedPreference === null && tocHeadings.length >= 2));
           tocPreferenceInitialized = true;
           setTocExpanded(shouldExpand, { persist: false });
         }
@@ -1587,7 +1589,9 @@
             Math.min(160, Math.max(80, previewContent.clientHeight * 0.24));
           var active = tocHeadings[0];
           for (var i = 0; i < tocHeadings.length; i++) {
-            if (tocHeadings[i].heading.getBoundingClientRect().top <= previewTop) {
+            if (
+              tocHeadings[i].heading.getBoundingClientRect().top <= previewTop
+            ) {
               active = tocHeadings[i];
             } else {
               break;
@@ -2030,28 +2034,7 @@
       });
 
       function smartFormat(text) {
-        if (!text) return "";
-        var lines = text
-          .split("\n")
-          .map(function (l) {
-            return l.trim();
-          })
-          .filter(function (l) {
-            return l.length > 0;
-          });
-        var result = [];
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i],
-            isH = /^#{1,6} /.test(line),
-            isHR = /^(---|___|\*\*\*)$/.test(line);
-          if ((isH || isHR) && i !== 0) result.push("");
-          result.push(line);
-          if ((isH || isHR) && i !== lines.length - 1) result.push("");
-        }
-        return result
-          .join("\n")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
+        return formatMarkdownDocument(text);
       }
 
       function flashIcon(id, cls) {
