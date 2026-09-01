@@ -148,7 +148,8 @@ function normalizeNestedFenceEnvelope(markdown) {
  * indented code blocks, so only trailing whitespace is removed. Ordinary
  * blank lines are removed. A single blank is retained only where removing it
  * would change block parsing (for example after lists or block quotes), and a
- * GFM table is always separated from following plain text.
+ * GFM table is always separated from following plain text. ATX headings are a
+ * deliberate style exception and keep one blank line above and below.
  *
  * @param {string} markdown Markdown source to format.
  * @returns {string} Formatted Markdown using LF line endings.
@@ -374,6 +375,8 @@ function formatMarkdownDocument(markdown) {
     pendingBlank = false;
     htmlBoundaryPending = false;
 
+    if (atxHeading) pushBlankLine();
+
     if (fence) {
       result.push(normalizeLineEnd(originalLine));
       activeFence = fence;
@@ -427,6 +430,8 @@ function formatMarkdownDocument(markdown) {
     }
 
     result.push(line);
+
+    if (atxHeading) pushBlankLine();
 
     if (listItem) {
       if (listBaseIndent === null || listItem.indent < listBaseIndent) {

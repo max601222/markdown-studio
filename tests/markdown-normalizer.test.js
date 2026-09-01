@@ -462,11 +462,13 @@ test("format preserves hard line breaks and indented fenced content", () => {
   assert.equal(formatMarkdownDocument(nestedFence), nestedFence);
 });
 
-test("format removes unnecessary spacing around explicit blocks", () => {
+test("format keeps one blank line before and after ATX headings", () => {
   const markdown = [
     "前段。",
     "",
+    "",
     "# 標題",
+    "",
     "",
     "| 欄位 | 值 |",
     "| --- | --- |",
@@ -479,11 +481,17 @@ test("format removes unnecessary spacing around explicit blocks", () => {
     formatMarkdownDocument(markdown),
     [
       "前段。",
+      "",
       "# 標題",
+      "",
       "| 欄位 | 值 |",
       "| --- | --- |",
       "| A | B |",
       "> 引言",
     ].join("\n"),
   );
+});
+
+test("format does not leave boundary blanks around an ATX heading", () => {
+  assert.equal(formatMarkdownDocument("\n\n# 標題\n\n"), "# 標題");
 });
